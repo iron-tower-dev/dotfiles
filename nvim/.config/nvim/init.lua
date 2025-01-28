@@ -1,5 +1,20 @@
-require("config.user")
+-- Set <space> as the leader key
+-- See `:help mapleader`
+--  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
 
-vim.keymap.set("n", "<space><space>x", "<cmd>source %<CR>")
-vim.keymap.set("n", "<space>x", ":.lua<CR>")
-vim.keymap.set("v", "<space>x", ":lua<CR>")
+-- Set to true if you have a Nerd Font installed and selected in the terminal
+vim.g.have_nerd_font = true
+
+-- [[ Vim Options ]]
+require 'config.options'
+
+-- [[ Basic Keymaps ]]
+require 'config.keymaps'
+
+-- [[ Basic Autocommands ]]
+require 'config.autocmds'
+
+-- [[ Bootstrap Lazy ]]
+require 'config.lazy'
