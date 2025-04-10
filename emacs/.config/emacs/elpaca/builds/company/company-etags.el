@@ -1,0 +1,1 @@
+/home/derrick/.config/emacs/elpaca/repos/company-mode/company-etags.el
