@@ -6,269 +6,63 @@
 
 * TABLE OF CONTENTS :toc:
 - [[#important-programs-to-load-first][IMPORTANT PROGRAMS TO LOAD FIRST]]
-  - [[#elpaca-package-manager][Elpaca Package Manager]]
-  - [[#load-evil-mode][Load Evil Mode]]
-  - [[#general-keybindings][General Keybindings]]
-- [[#app-launchers][APP LAUNCHERS]]
-  - [[#counsel-linux-app][Counsel-Linux-App]]
-  - [[#app-launcher][App-Launcher]]
+  - [[#adding-the-scripts-directory-to-path][Adding the scripts directory to path]]
+  - [[#sourcing-the-scripts][Sourcing the scripts]]
 - [[#all-the-icons][ALL THE ICONS]]
-- [[#buffer-move][BUFFER-MOVE]]
+- [[#backup][BACKUP]]
 - [[#company][COMPANY]]
 - [[#dashboard][DASHBOARD]]
 - [[#diminish][DIMINISH]]
+- [[#dired][DIRED]]
+- [[#elfeed][ELFEED]]
+- [[#evil][EVIL]]
 - [[#flycheck][FLYCHECK]]
 - [[#fonts][FONTS]]
   - [[#setting-the-font-face][Setting the Font Face]]
   - [[#zooming-inout][Zooming In/Out]]
-- [[#graphical-user-interface-tweaks][GRAPHICAL USER INTERFACE TWEAKS]]
-  - [[#disable-menubar-toolbars-and-scrollbars][Disable Menubar, Toolbars and Scrollbars]]
-  - [[#display-line-numbers-and-truncated-lines][Display Line Numbers and Truncated Lines]]
+- [[#general-keybindings][GENERAL KEYBINDINGS]]
+- [[#git-programs][GIT PROGRAMS]]
+  - [[#git-time-machine][Git Time Machine]]
+  - [[#magit][Magit]]
+- [[#highlight-todo][HIGHLIGHT TODO]]
 - [[#ivy-counsel][IVY (COUNSEL)]]
 - [[#language-support][LANGUAGE SUPPORT]]
+- [[#minibuffer-escape][MINIBUFFER ESCAPE]]
+- [[#modeline][MODELINE]]
+- [[#neotree][NEOTREE]]
 - [[#org-mode][ORG MODE]]
   - [[#enabling-table-of-contents][Enabling Table of Contents]]
   - [[#enabling-org-bullets][Enabling Org Bullets]]
-  - [[#disable-electric-indent][Disable Electric Indent]]
+  - [[#diminish-org-indent-mode][Diminish Org Indent Mode]]
+  - [[#org-level-headers][Org Level Headers]]
   - [[#source-code-block-tag-expansion][Source Code Block Tag Expansion]]
+- [[#perspective][PERSPECTIVE]]
 - [[#projectile][PROJECTILE]]
 - [[#rainbow-mode][RAINBOW MODE]]
+- [[#sane-defaults][SANE DEFAULTS]]
 - [[#shells-and-terminals][SHELLS AND TERMINALS]]
   - [[#eshell][Eshell]]
   - [[#vterm][Vterm]]
   - [[#vterm-toggle][Vterm-Toggle]]
 - [[#sudo-edit][SUDO EDIT]]
 - [[#theme][THEME]]
+- [[#tldr][TLDR]]
 - [[#transparency][TRANSPARENCY]]
 - [[#which-key][WHICH-KEY]]
 
 * IMPORTANT PROGRAMS TO LOAD FIRST
-** Elpaca Package Manager
+To keep this =config.org= a reasonable length, I have moved a lot of code to individual scripts that will be sourced by this config.  These scripts are found in "~/.config/emacs/scripts" and do not contain any code that most people are likely to need to edit.
 
+** Adding the scripts directory to path
 #+begin_src emacs-lisp
-  (defvar elpaca-installer-version 0.10)
-  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                                :ref nil :depth 1 :inherit ignore
-                                :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                                :build (:not elpaca--activate-package)))
-  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-         (build (expand-file-name "elpaca/" elpaca-builds-directory))
-         (order (cdr elpaca-order))
-         (default-directory repo))
-    (add-to-list 'load-path (if (file-exists-p build) build repo))
-    (unless (file-exists-p repo)
-      (make-directory repo t)
-      (when (<= emacs-major-version 28) (require 'subr-x))
-      (condition-case-unless-debug err
-          (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                    ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                    ,@(when-let* ((depth (plist-get order :depth)))
-                                                        (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                    ,(plist-get order :repo) ,repo))))
-                    ((zerop (call-process "git" nil buffer t "checkout"
-                                          (or (plist-get order :ref) "--"))))
-                    (emacs (concat invocation-directory invocation-name))
-                    ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                          "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                    ((require 'elpaca))
-                    ((elpaca-generate-autoloads "elpaca" repo)))
-              (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-            (error "%s" (with-current-buffer buffer (buffer-string))))
-        ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-    (unless (require 'elpaca-autoloads nil t)
-      (require 'elpaca)
-      (elpaca-generate-autoloads "elpaca" repo)
-      (load "./elpaca-autoloads")))
-  (add-hook 'after-init-hook #'elpaca-process-queues)
-  (elpaca `(,@elpaca-order))
-
-  ;; Install a package via the elpaca macro
-  ;; See the "recipes" section of the manual for more details.
-
-  ;; (elpaca example-package)
-
-  ;; Install use-package support
-  (elpaca elpaca-use-package
-    ;; Enable use-package :ensure support for Elpaca.
-    (elpaca-use-package-mode))
-  
-  ;; Block until current queue processed.
-  (elpaca-wait)
-
-  ;;Turns off elpaca-use-package-mode current declaration
-  ;;Note this will cause evaluate the declaration immediately. It is not deferred.
-  ;;Useful for configuring built-in emacs features.
-  (use-package emacs :ensure nil :config (setq ring-bell-function #'ignore))
+  (add-to-list 'load-path "~/.config/emacs/scripts/")
 #+end_src
 
-** Load Evil Mode
-
+** Sourcing the scripts
 #+begin_src emacs-lisp
-  (use-package evil
-      :ensure t
-      :demand t
-      :init      ;; tweak evil's configuration before loading it
-      (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
-      (setq evil-want-keybinding nil)
-      (setq evil-vsplit-window-right t)
-      (setq evil-split-window-below t)
-      (evil-mode))
-    (use-package evil-collection
-      :after evil
-      :ensure t
-      :config
-      (setq evil-collection-mode-list '(dashboard dired ibuffer))
-      (evil-collection-init))
-    (use-package evil-tutor :ensure t)
-#+end_src
-
-** General Keybindings
-
-#+begin_src emacs-lisp
-  (use-package general
-    :ensure t
-    :config
-    (general-evil-setup)
-
-    ;; set up 'SPC' as the global leader key
-    (general-create-definer iron/leader-keys
-      :states '(normal insert visual emacs)
-      :keymaps 'override
-      :prefix "SPC" ;; set leader
-      :global-prefix "M-SPC") ;; access leader in insert mode
-    
-    (iron/leader-keys
-      "." '(find-file :wk "Find file")
-      "f c" '((lambda () (interactive) (find-file "~/.config/emacs/iron-emacs.org")) :wk "[F]ind emacs [C]onfig")
-      "f r" '(counsel-recentf :wk "[F]ind [R]ecent files")
-      "TAB TAB" '(comment-line :wk "Comment lines"))
-
-    (iron/leader-keys
-      "b" '(:ignore t :wk "[B]uffer")
-      "b b" '(switch-to-buffer :wk "Switch[B]uffer")
-      "b i" '(ibuffer :wk "[I]buffer")
-      "b k" '(kill-this-buffer :wk "[K]ill this buffer")
-      "b n" '(next-buffer :wk "[N]ext buffer")
-      "b p" '(previous-buffer :wk "[P]revious buffer")
-      "b r" '(revert-buffer :wk "[R]eload buffer"))
-    
-    (iron/leader-keys
-      "e" '(:ignore t :wk "[E]shell/[E]valuate")    
-      "e b" '(eval-buffer :wk "Evaluate elisp in [B]uffer")
-      "e d" '(eval-defun :wk "Evaluate [D]efun containing or after point")
-      "e e" '(eval-expression :wk "Evaluate and elisp [E]xpression")
-      "e h" '(counsel-esh-history :wk "Eshell [H]istory")
-      "e l" '(eval-last-sexp :wk "Evaluate [L]ast elisp expression before point")
-      "e r" '(eval-region :wk "Evaluate elisp in [R]egion")
-      "e s" '(eshell :wk "E[S]hell"))
-
-   (iron/leader-keys
-      "h" '(:ignore t :wk "[H]elp")
-      "h f" '(describe-function :wk "Describe [F]unction")
-      "h v" '(describe-variable :wk "Describe [V]ariable")
-      "h r r" '((lambda () (interactive) (load-file "~/.config/emacs/init.el")) :wk "[R]eload emacs config"))
-   
-   (iron/leader-keys
-      "m" '(:ignore t :wk "Org")
-      "m a" '(org-agenda :wk "Org [A]genda")
-      "m e" '(org-export-dispatch :wk "Org [E]xport dispatch")
-      "m i" '(org-toggle-item :wk "Org toggle [I]tem")
-      "m t" '(org-todo :wk "Org [T]odo")
-      "m B" '(org-babel-tangle :wk "Org [B]abel tangle")
-      "m T" '(org-todo-list :wk "Org [T]odo list"))
-
-   (iron/leader-keys
-      "m b" '(:ignore t :wk "Tables")
-      "m b -" '(org-table-insert-hline :wk "Insert hline in table"))
-
-   (iron/leader-keys
-      "m d" '(:ignore t :wk "Date/deadline")
-      "m d t" '(org-time-stamp :wk "Org time stamp"))
-
-   (iron/leader-keys
-      "p" '(projectile-command-map :wk "[P]rojectile"))
-
-   (iron/leader-keys
-      "t" '(:ignore t :wk "[T]oggle")
-      "t l" '(display-line-numbers-mode :wk "Toggle [L]ine numbers")
-      "t t" '(visual-line-mode :wk "Toggle [T]runcated lines")
-      "t v" '(vterm-toggle :wk "Toggle [V]term"))
-
-   (iron/leader-keys
-      "w" '(:ignore t :wk "[W]indows")
-      ;; Window splits
-      "w c" '(evil-window-delete :wk "[C]lose window")
-      "w n" '(evil-window-new :wk "[N]ew window")
-      "w s" '(evil-window-split :wk "Horizontal [S]plit window")
-      "w v" '(evil-window-vsplit :wk "[V]ertical split window")
-      ;; Window motions
-      "w h" '(evil-window-left :wk "Window left [H]")
-      "w j" '(evil-window-down :wk "Window down [J]")
-      "w k" '(evil-window-up :wk "Window up [K]")
-      "w l" '(evil-window-right :wk "Window right [L]")
-      "w w" '(evil-window-next :wk "Goto next [W]indow")
-      ;; Move Windows
-      "w H" '(buf-move-left :wk "Buffer move left [H]")
-      "w J" '(buf-move-down :wk "Buffer move down [J]")
-      "w K" '(buf-move-up :wk "Buffer move up [K]")
-      "w L" '(buf-move-right :wk "Buffer move right [L]"))
-  )
-#+end_src
-
-* APP LAUNCHERS
-
-** Counsel-Linux-App
-Since we have counsel installed, we can use =counsel-linux-app= to launch our Linux apps.  It list the apps by their executable command, so it's kind of tricky to use.
-
-#+begin_src emacs-lisp
-  (defun emacs-counsel-launcher ()
-    "Create and select a frame called emacs-counsel-launcher which consists only of a minibuffer and has specific dimensions. Runs counsel-linux-app on that frame, which is an emacs command that prompts you to select an app and open it in a dmenu like behaviour. Delete the frame after that command has exited"
-    (interactive)
-    (with-selected-frame 
-      (make-frame '((name . "emacs-run-launcher")
-                    (minibuffer . only)
-                    (fullscreen . 0) ; no fullscreen
-                    (undecorated . t) ; remove title bar
-                    ;;(auto-raise . t) ; focus on this frame
-                    ;;(tool-bar-lines . 0)
-                    ;;(menu-bar-lines . 0)
-                    (internal-border-width . 10)
-                    (width . 80)
-                    (height . 11)))
-                    (unwind-protect
-                      (counsel-linux-app)
-                      (delete-frame))))
-#+end_src
-
-** App-Launcher
-The =app-launcher= is a better run launcher since it reads the desktop applications on your system and you can search them by their names as defined in their desktop file.  This means that sometimes you have to search for a generic term rather than the actual binary command of the program.
-
-#+begin_src emacs-lisp
-  (use-package app-launcher
-    :ensure '(app-launcher :host github :repo "SebastienWae/app-launcher"))
-  ;; create a global keyboard shortcut with the following code
-  ;; emacsclient -cF "((visibility . nil))" -e "(emacs-run-launcher)"
-
-  (defun emacs-run-launcher ()
-    "Create and select a frame called emacs-run-launcher which consists only of a minibuffer and has specific dimensions. Runs app-launcher-run-app on that frame, which is an emacs command that prompts you to select an app and open it in a dmenu like behaviour. Delete the frame after that command has exited"
-    (interactive)
-    (with-selected-frame 
-      (make-frame '((name . "emacs-run-launcher")
-                    (minibuffer . only)
-                    (fullscreen . 0) ; no fullscreen
-                    (undecorated . t) ; remove title bar
-                    ;;(auto-raise . t) ; focus on this frame
-                    ;;(tool-bar-lines . 0)
-                    ;;(menu-bar-lines . 0)
-                    (internal-border-width . 10)
-                    (width . 80)
-                    (height . 11)))
-                    (unwind-protect
-                      (app-launcher-run-app)
-                      (delete-frame))))
+  (require 'elpaca-setup)  ;; The Elpaca Package Manager
+  (require 'buffer-move)   ;; Buffer-move for better window management
+  (require 'app-launchers) ;; Use emacs as a run launcher like dmenu (experimental)
 #+end_src
 
 * ALL THE ICONS
@@ -284,79 +78,11 @@ This is an icon set that can be used with dashboard, dired, ibuffer and other Em
     :hook (dired-mode . (lambda () (all-the-icons-dired-mode t))))
 #+end_src
 
-* BUFFER-MOVE
-Creating some functions to allow us to easily move windows (splits) around.  The following block of code was taken from buffer-move.el found on the EmacsWiki:
-https://www.emacswiki.org/emacs/buffer-move.el
+* BACKUP 
+By default, Emacs creates automatic backups of files in their original directories, such "file.el" and the backup "file.el~".  This leads to a lot of clutter, so let's tell Emacs to put all backups that it creates in the =TRASH= directory.
 
 #+begin_src emacs-lisp
-  (require 'windmove)
-
-  ;;;###autoload
-  (defun buf-move-up ()
-    "Swap the current buffer and the buffer above the split.
-  If there is no split, ie now window above the current one, an
-  error is signaled."
-  ;;  "Switches between the current buffer, and the buffer above the
-  ;;  split, if possible."
-    (interactive)
-    (let* ((other-win (windmove-find-other-window 'up))
-  	 (buf-this-buf (window-buffer (selected-window))))
-      (if (null other-win)
-          (error "No window above this one")
-        ;; swap top with this one
-        (set-window-buffer (selected-window) (window-buffer other-win))
-        ;; move this one to top
-        (set-window-buffer other-win buf-this-buf)
-        (select-window other-win))))
-
-  ;;;###autoload
-  (defun buf-move-down ()
-  "Swap the current buffer and the buffer under the split.
-  If there is no split, ie now window under the current one, an
-  error is signaled."
-    (interactive)
-    (let* ((other-win (windmove-find-other-window 'down))
-  	 (buf-this-buf (window-buffer (selected-window))))
-      (if (or (null other-win) 
-              (string-match "^ \\*Minibuf" (buffer-name (window-buffer other-win))))
-          (error "No window under this one")
-        ;; swap top with this one
-        (set-window-buffer (selected-window) (window-buffer other-win))
-        ;; move this one to top
-        (set-window-buffer other-win buf-this-buf)
-        (select-window other-win))))
-
-  ;;;###autoload
-  (defun buf-move-left ()
-  "Swap the current buffer and the buffer on the left of the split.
-  If there is no split, ie now window on the left of the current
-  one, an error is signaled."
-    (interactive)
-    (let* ((other-win (windmove-find-other-window 'left))
-  	 (buf-this-buf (window-buffer (selected-window))))
-      (if (null other-win)
-          (error "No left split")
-        ;; swap top with this one
-        (set-window-buffer (selected-window) (window-buffer other-win))
-        ;; move this one to top
-        (set-window-buffer other-win buf-this-buf)
-        (select-window other-win))))
-
-  ;;;###autoload
-  (defun buf-move-right ()
-  "Swap the current buffer and the buffer on the right of the split.
-  If there is no split, ie now window on the right of the current
-  one, an error is signaled."
-    (interactive)
-    (let* ((other-win (windmove-find-other-window 'right))
-  	 (buf-this-buf (window-buffer (selected-window))))
-      (if (null other-win)
-          (error "No right split")
-        ;; swap top with this one
-        (set-window-buffer (selected-window) (window-buffer other-win))
-        ;; move this one to top
-        (set-window-buffer other-win buf-this-buf)
-        (select-window other-win))))
+  (setq backup-directory-alist '((".*" . "~/.Trash")))
 #+end_src
 
 * COMPANY
@@ -395,7 +121,7 @@ Emacs Dashboard is an extensible startup screen showing you recent files, bookma
     (setq dashboard-set-file-icons t)
     (setq dashboard-banner-logo-title "Emacs Is More Than A Text Editor!")
     ;;(setq dashboard-startup-banner 'logo) ;; use standard emacs logo as banner
-    (setq dashboard-startup-banner "/home/dt/.config/emacs/images/emacs-dash.png")  ;; use custom image as banner
+    (setq dashboard-startup-banner "/home/derrick/.config/emacs/images/emacs-dash.png")  ;; use custom image as banner
     (setq dashboard-center-content nil) ;; set to 't' for centered content
     (setq dashboard-items '((recents . 5)
                             (agenda . 5 )
@@ -414,6 +140,90 @@ This package implements hiding or abbreviation of the modeline displays (lighter
 
 #+begin_src emacs-lisp
   (use-package diminish :ensure t)
+#+end_src
+
+* DIRED
+#+begin_src emacs-lisp
+  (use-package dired-open
+    :ensure t
+    :config
+    (setq dired-open-extensions '(("gif" . "sxiv")
+                                  ("jpg" . "sxiv")
+                                  ("png" . "sxiv")
+                                  ("mkv" . "mpv")
+                                  ("mp4" . "mpv"))))
+
+  (use-package peep-dired
+    :after dired
+    :ensure t
+    :hook (evil-normalize-keymaps . peep-dired-hook)
+    :config
+      (evil-define-key 'normal dired-mode-map (kbd "h") 'dired-up-directory)
+      (evil-define-key 'normal dired-mode-map (kbd "l") 'dired-open-file) ; use dired-find-file instead if not using dired-open package
+      (evil-define-key 'normal peep-dired-mode-map (kbd "j") 'peep-dired-next-file)
+      (evil-define-key 'normal peep-dired-mode-map (kbd "k") 'peep-dired-prev-file)
+  )
+
+  ;;(add-hook 'peep-dired-hook 'evil-normalize-keymaps)
+#+end_src
+
+* ELFEED
+An RSS newsfeed reader for Emacs.  Move through the articles with 'j/k'.  Move through the stories with 'CTRL j/k' when in other frame.
+
+#+begin_src emacs-lisp
+  (use-package elfeed
+    :ensure t
+    :config
+    (setq elfeed-search-feed-face ":foreground #ffffff :weight bold"
+          elfeed-feeds (quote
+                         (("https://www.reddit.com/r/linux.rss" reddit linux)
+                          ("https://www.reddit.com/r/commandline.rss" reddit commandline)
+                          ("https://www.reddit.com/r/distrotube.rss" reddit distrotube)
+                          ("https://www.reddit.com/r/emacs.rss" reddit emacs)
+                          ("https://www.gamingonlinux.com/article_rss.php" gaming linux)
+                          ("https://hackaday.com/blog/feed/" hackaday linux)
+                          ("https://opensource.com/feed" opensource linux)
+                          ("https://linux.softpedia.com/backend.xml" softpedia linux)
+                          ("https://itsfoss.com/feed/" itsfoss linux)
+                          ("https://www.zdnet.com/topic/linux/rss.xml" zdnet linux)
+                          ("https://www.phoronix.com/rss.php" phoronix linux)
+                          ("http://feeds.feedburner.com/d0od" omgubuntu linux)
+                          ("https://www.computerworld.com/index.rss" computerworld linux)
+                          ("https://www.networkworld.com/category/linux/index.rss" networkworld linux)
+                          ("https://www.techrepublic.com/rssfeeds/topic/open-source/" techrepublic linux)
+                          ("https://betanews.com/feed" betanews linux)
+                          ("http://lxer.com/module/newswire/headlines.rss" lxer linux)
+                          ("https://distrowatch.com/news/dwd.xml" distrowatch linux)))))
+   
+  (use-package elfeed-goodies
+    :ensure t
+    :demand t
+    :init
+    (elfeed-goodies/setup)
+    :config
+    (setq elfeed-goodies/entry-pane-size 0.5))
+#+end_src
+
+* EVIL
+[[https://github.com/emacs-evil/evil][Evil]] is an extensible vi/vim layer for Emacs.  Because...let's face it.  The Vim keybindings are just plain better.
+
+#+begin_src emacs-lisp
+  (use-package evil
+      :ensure t
+      :demand t
+      :init      ;; tweak evil's configuration before loading it
+      (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+      (setq evil-want-keybinding nil)
+      (setq evil-vsplit-window-right t)
+      (setq evil-split-window-below t)
+      (evil-mode))
+    (use-package evil-collection
+      :after evil
+      :ensure t
+      :config
+      (setq evil-collection-mode-list '(dashboard dired ibuffer))
+      (evil-collection-init))
+    (use-package evil-tutor :ensure t)
 #+end_src
 
 * FLYCHECK
@@ -472,20 +282,247 @@ You can use the bindings CTRL plus =/- for zooming in/out.  You can also use CTR
   (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
 #+end_src
 
-* GRAPHICAL USER INTERFACE TWEAKS
-Let's make GNU Emacs look a little better.
+* GENERAL KEYBINDINGS
 
-** Disable Menubar, Toolbars and Scrollbars
 #+begin_src emacs-lisp
-  (menu-bar-mode -1)
-  (tool-bar-mode -1)
-  (scroll-bar-mode -1)
+  (use-package general
+    :ensure t
+    :config
+    (general-evil-setup)
+
+    ;; set up 'SPC' as the global leader key
+    (general-create-definer iron/leader-keys
+      :states '(normal insert visual emacs)
+      :keymaps 'override
+      :prefix "SPC" ;; set leader
+      :global-prefix "M-SPC") ;; access leader in insert mode
+    
+    (iron/leader-keys
+      "SPC" '(counsel-M-x :wk "Counsel M-x")
+      "." '(find-file :wk "Find file")
+      "=" '(perspective-map :wk "Perspective") ;; Lists all the perspective keybindings
+      "TAB TAB" '(comment-line :wk "Comment lines")
+      "u" '(universal-argument :wk "Universal argument"))
+
+    (iron/leader-keys
+      "b" '(:ignore t :wk "[B]uffer")
+      "b c" '(clone-indirect-buffer :wk "Create indirect buffer [C]opy in a split")
+      "b C" '(clone-indirect-buffer-other-window :wk "[C]lone indirect buffer in new window")
+      "b d" '(bookmark-delete :wk "Delete bookmark")
+      "b i" '(ibuffer :wk "[I]buffer")
+      "b k" '(kill-this-buffer :wk "[K]ill this buffer")
+      "b K" '(kill-some-buffers :wk "[K]ill multiple buffers")
+      "b l" '(list-bookmarks :wk "[L]ist bookmarks")
+      "b m" '(bookmark-set :wk "Set book[M]ark")
+      "b n" '(next-buffer :wk "[N]ext buffer")
+      "b p" '(previous-buffer :wk "[P]revious buffer")
+      "b r" '(revert-buffer :wk "[R]eload buffer")
+      "b R" '(rename-buffer :wk "[R]ename buffer")
+      "b s" '(basic-save-buffer :wk "[S]ave buffer")
+      "b S" '(save-some-buffers :wk "[S]ave multiple buffers")
+      "b w" '(bookmark-save :wk "[W]rite/Save current bookmarks to bookmark file"))
+    
+    (iron/leader-keys
+      "d" '(:ignore t :wk "[D]ired")
+      "d d" '(dired :wk "Open [D]ired")
+      "d j" '(dired-jump :wk "Dired [J]ump to current")
+      "d n" '(neotree-dir :wk "Open directory in [N]eotree")
+      "d p" '(peep-dired :wk "Peep-dired"))
+    
+    (iron/leader-keys
+      "e" '(:ignore t :wk "[E]shell/[E]valuate")    
+      "e b" '(eval-buffer :wk "Evaluate elisp in [B]uffer")
+      "e d" '(eval-defun :wk "Evaluate [D]efun containing or after point")
+      "e e" '(eval-expression :wk "Evaluate and elisp [E]xpression")
+      "e h" '(counsel-esh-history :wk "Eshell [H]istory")
+      "e l" '(eval-last-sexp :wk "Evaluate [L]ast elisp expression before point")
+      "e r" '(eval-region :wk "Evaluate elisp in [R]egion")
+      "e R" '(eww-reload :which-key "[R]eload current page in EWW")
+      "e s" '(eshell :wk "E[S]hell")
+      "e w" '(eww :wk "EWW emacs [W]eb browser"))
+
+    (iron/leader-keys
+      "f" '(:ignore t :wk "[F]iles")
+      "f c" '((lambda () (interactive) 
+  	      (find-file "~/.config/emacs/iron-emacs.org")) 
+  	    :wk "[F]ind emacs [C]onfig")
+      "f e" '((lambda () (interactive)
+  	      (dired "~/.config/emacs/"))
+  	    :wk "Open user-[E]macs-directory in dired")
+      "f d" '(find-grep-dired :wk "Search for string in files in [D]IR")
+      "f g" '(counsel-grep-or-swiper :wk "[G]rep for string in current file")
+      "f i" '((lambda () (interactive)
+  	      (find-file "~/.config/emacs/init.el"))
+  	    :wk "Open emacs [I]nit.el")
+      "f j" '(counsel-file-jump :wk "[J]ump to a file below current directory")
+      "f l" '(counsel-locate :wk "[L]ocate a file")
+      "f r" '(counsel-recentf :wk "Find [R]ecent files")
+      "f u" '(sudo-edit-find-file :wk "S[U]do find file")
+      "f U" '(sudo-edit :wk "S[U]do edit file"))
+    
+    (iron/leader-keys
+      "g" '(:ignore t :wk "[G]it")    
+      "g /" '(magit-displatch :wk "Magit dispatch [/]")
+      "g ." '(magit-file-displatch :wk "Magit file dispatch [.]")
+      "g b" '(magit-branch-checkout :wk "Switch [B]ranch")
+      "g c" '(:ignore t :wk "[C]reate") 
+      "g c b" '(magit-branch-and-checkout :wk "Create [B]ranch and checkout")
+      "g c c" '(magit-commit-create :wk "Create [C]ommit")
+      "g c f" '(magit-commit-fixup :wk "Create [F]ixup commit")
+      "g C" '(magit-clone :wk "[C]lone repo")
+      "g f" '(:ignore t :wk "[F]ind") 
+      "g f c" '(magit-show-commit :wk "Show [C]ommit")
+      "g f f" '(magit-find-file :wk "Magit find [F]ile")
+      "g f g" '(magit-find-git-config-file :wk "Find [G]itconfig file")
+      "g F" '(magit-fetch :wk "Git [F]etch")
+      "g g" '(magit-status :wk "Ma[G]it status")
+      "g i" '(magit-init :wk "[I]nitialize git repo")
+      "g l" '(magit-log-buffer-file :wk "Magit buffer [L]og")
+      "g r" '(vc-revert :wk "Git [R]evert file")
+      "g s" '(magit-stage-file :wk "Git [S]tage file")
+      "g t" '(git-timemachine :wk "Git [T]ime machine")
+      "g u" '(magit-stage-file :wk "Git [U]nstage file"))
+
+    (iron/leader-keys
+      "h" '(:ignore t :wk "[H]elp")  
+      "h a" '(counsel-apropos :wk "[A]propos")
+      "h b" '(describe-bindings :wk "Describe [B]indings")
+      "h c" '(describe-char :wk "Describe [C]haracter under cursor")
+      "h d" '(:ignore t :wk "Emacs [D]ocumentation")
+      "h d a" '(about-emacs :wk "[A]bout Emacs")
+      "h d d" '(view-emacs-debugging :wk "View Emacs [D]ebugging")
+      "h d f" '(view-emacs-FAQ :wk "View Emacs [F]AQ")
+      "h d m" '(info-emacs-manual :wk "The Emacs [M]anual") 
+      "h d n" '(view-emacs-news :wk "View Emacs [N]ews")
+      "h d o" '(describe-distribution :wk "How to [O]btain Emacs")
+      "h d p" '(view-emacs-problems :wk "View Emacs [P]roblems")
+      "h d t" '(view-emacs-todo :wk "View Emacs [T]odo")
+      "h d w" '(describe-no-warranty :wk "Describe no [W]arranty")
+      "h e" '(view-echo-area-messages :wk "View [E]cho area messages")
+      "h f" '(describe-function :wk "Describe [F]unction")
+      "h F" '(describe-face :wk "Describe [F]ace")
+      "h g" '(describe-gnu-project :wk "Describe [G]NU Project")
+      "h i" '(info :wk "[I]nfo")
+      "h I" '(describe-input-method :wk "Describe [I]nput method")
+      "h k" '(describe-key :wk "Describe [K]ey")
+      "h l" '(view-lossage :wk "Display recent keystrokes and the commands run")
+      "h L" '(describe-language-environment :wk "Describe [L]anguage environment")
+      "h m" '(describe-mode :wk "Describe [M]ode")
+      "h r" '(:ignore t :wk "[R]eload")
+      "h r r" '((lambda () (interactive)
+  		(load-file "~/.config/emacs/init.el")
+  		(ignore (elpaca-process-queues)))
+                :wk "Reload emacs config")
+      "h t" '(load-theme :wk "Load [T]heme")
+      "h v" '(describe-variable :wk "Describe [V]ariable")
+      "h w" '(where-is :wk "Prints keybinding for command if set")
+      "h x" '(describe-command :wk "Display full documentation for command"))
+   
+   (iron/leader-keys
+      "m" '(:ignore t :wk "Org")
+      "m a" '(org-agenda :wk "Org [A]genda")
+      "m e" '(org-export-dispatch :wk "Org [E]xport dispatch")
+      "m i" '(org-toggle-item :wk "Org toggle [I]tem")
+      "m t" '(org-todo :wk "Org [T]odo")
+      "m B" '(org-babel-tangle :wk "Org [B]abel tangle")
+      "m T" '(org-todo-list :wk "Org [T]odo list"))
+
+   (iron/leader-keys
+      "m b" '(:ignore t :wk "Tables")
+      "m b -" '(org-table-insert-hline :wk "Insert hline in table"))
+
+   (iron/leader-keys
+      "m d" '(:ignore t :wk "Date/deadline")
+      "m d t" '(org-time-stamp :wk "Org time stamp"))
+
+   (iron/leader-keys
+      "o" '(:ignore t :wk "[O]pen")
+      "o d" '(dashboard-open :wk "[D]ashboard")
+      "o e" '(elfeed :wk "[E]lfeed RSS")
+      "o f" '(make-frame :wk "Open buffer in new [F]rame")
+      "o F" '(select-frame-by-name :wk "Select [F]rame by name"))
+
+   (iron/leader-keys
+      "p" '(projectile-command-map :wk "[P]rojectile"))
+
+   (iron/leader-keys
+      "s" '(:ignore t :wk "[S]earch")
+      "s d" '(dictionary-search :wk "Search [D]ictionary")
+      "s m" '(man :wk "[M]an pages")
+      "s t" '(tldr :wk "Lookup [T]LDR docs for a command")
+      "s w" '(woman :wk "[W]oman pages: similar to man but doesn't require man"))
+
+   (iron/leader-keys
+      "t" '(:ignore t :wk "[T]oggle")
+      "t e" '(eshell-toggle :wk "Toggle [E]shell")
+      "t f" '(flycheck-mode :wk "Toggle [F]lycheck")
+      "t l" '(display-line-numbers-mode :wk "Toggle [L]ine numbers")
+      "t n" '(neotree-toggle :wk "Toggle [N]eotree file viewer")
+      "t o" '(org-mode :wk "Toggle [O]rg mode")
+      "t r" '(rainbow-mode :wk "Toggle [R]ainbow mode")
+      "t t" '(visual-line-mode :wk "Toggle [T]runcated lines")
+      "t v" '(vterm-toggle :wk "Toggle [V]term"))
+
+   (iron/leader-keys
+      "w" '(:ignore t :wk "[W]indows")
+      ;; Window splits
+      "w c" '(evil-window-delete :wk "[C]lose window")
+      "w n" '(evil-window-new :wk "[N]ew window")
+      "w s" '(evil-window-split :wk "Horizontal [S]plit window")
+      "w v" '(evil-window-vsplit :wk "[V]ertical split window")
+      ;; Window motions
+      "w h" '(evil-window-left :wk "Window left [H]")
+      "w j" '(evil-window-down :wk "Window down [J]")
+      "w k" '(evil-window-up :wk "Window up [K]")
+      "w l" '(evil-window-right :wk "Window right [L]")
+      "w w" '(evil-window-next :wk "Goto next [W]indow")
+      ;; Move Windows
+      "w H" '(buf-move-left :wk "Buffer move left [H]")
+      "w J" '(buf-move-down :wk "Buffer move down [J]")
+      "w K" '(buf-move-up :wk "Buffer move up [K]")
+      "w L" '(buf-move-right :wk "Buffer move right [L]"))
+  )
 #+end_src
 
-** Display Line Numbers and Truncated Lines
+* GIT PROGRAMS
+** Git Time Machine
+[[https://github.com/emacsmirror/git-timemachine][git-timemachine]] is a program that allows you to move backwards and forwards through a file's commits.  'SPC g t' will open the time machine on a file if it is in a git repo.  Then, while in normal mode, you can use 'CTRL-j' and 'CTRL-k' to move backwards and forwards through the commits.
+
 #+begin_src emacs-lisp
-  (global-display-line-numbers-mode 1)
-  (global-visual-line-mode t)
+  (use-package git-timemachine
+    :after git-timemachine
+    :ensure t
+    :hook (evil-normalize-keymaps . git-timemachine-hook)
+    :config
+      (evil-define-key 'normal git-timemachine-mode-map (kbd "C-j") 'git-timemachine-show-previous-revision)
+      (evil-define-key 'normal git-timemachine-mode-map (kbd "C-k") 'git-timemachine-show-next-revision)
+  )
+#+end_src
+
+** Magit
+[[https://magit.vc/manual/][Magit]] is a full-featured git client for Emacs.
+
+#+begin_src emacs-lisp
+  (use-package magit :ensure t)
+#+end_src
+
+* HIGHLIGHT TODO
+Adding highlights to TODO and related words.
+
+#+begin_src emacs-lisp
+  (use-package hl-todo
+    :ensure t
+    :hook ((org-mode . hl-todo-mode)
+           (prog-mode . hl-todo-mode))
+    :config
+    (setq hl-todo-highlight-punctuation ":"
+          hl-todo-keyword-faces
+          `(("TODO"       warning bold)
+            ("FIXME"      error bold)
+            ("HACK"       font-lock-constant-face bold)
+            ("REVIEW"     font-lock-keyword-face bold)
+            ("NOTE"       success bold)
+            ("DEPRECATED" font-lock-doc-face bold))))
 #+end_src
 
 * IVY (COUNSEL)
@@ -540,6 +577,57 @@ Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM,
   (use-package lua-mode :ensure t)
 #+end_src
 
+* MINIBUFFER ESCAPE
+By default, Emacs requires you to hit ESC three times to escape quit the minibuffer.  
+
+#+begin_src emacs-lisp
+  (global-set-key [escape] 'keyboard-escape-quit)
+#+end_src
+
+* MODELINE
+The modeline is the bottom status bar that appears in Emacs windows.  While you can create your own custom modeline, why go to the trouble when Doom Emacs already has a nice modeline package available.  For more information on what is available to configure in the Doom modeline, check out: [[https://github.com/seagle0128/doom-modeline][Doom Modeline]]
+
+#+begin_src emacs-lisp
+  (use-package doom-modeline
+    :ensure t
+    :init (doom-modeline-mode 1)
+    :config
+    (setq doom-modeline-height 35      ;; sets modeline height
+          doom-modeline-bar-width 5    ;; sets right bar width
+          doom-modeline-persp-name t   ;; adds perspective name to modeline
+          doom-modeline-persp-icon t)) ;; adds folder icon next to persp name
+#+end_src
+
+* NEOTREE
+Neotree is a file tree viewer.  When you open neotree, it jumps to the current file thanks to neo-smart-open.  The neo-window-fixed-size setting makes the neotree width be adjustable.  NeoTree provides following themes: classic, ascii, arrow, icons, and nerd.  Theme can be configed by setting "two" themes for neo-theme: one for the GUI and one for the terminal.  I like to use 'SPC t' for 'toggle' keybindings, so I have used 'SPC t n' for toggle-neotree.
+
+| COMMAND        | DESCRIPTION               | KEYBINDING |
+|----------------+---------------------------+------------|
+| neotree-toggle | /Toggle neotree/            | SPC t n    |
+| neotree- dir   | /Open directory in neotree/ | SPC d n    |
+
+#+BEGIN_SRC emacs-lisp
+  (use-package neotree
+    :ensure t
+    :config
+    (setq neo-smart-open t
+          neo-show-hidden-files t
+          neo-window-width 55
+          neo-window-fixed-size nil
+          inhibit-compacting-font-caches t
+          projectile-switch-project-action 'neotree-projectile-action) 
+          ;; truncate long file names in neotree
+          (add-hook 'neo-after-create-hook
+             #'(lambda (_)
+                 (with-current-buffer (get-buffer neo-buffer-name)
+                   (setq truncate-lines t)
+                   (setq word-wrap nil)
+                   (make-local-variable 'auto-hscroll-mode)
+                   (setq auto-hscroll-mode nil)))))
+
+  ;; show hidden files
+#+end_src
+
 * ORG MODE
 ** Enabling Table of Contents
 #+begin_src emacs-lisp
@@ -559,11 +647,23 @@ Org-bullets gives us attractive bullets rather than asterisks.
   (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
 #+end_src
 
-** Disable Electric Indent
-Org mode source blocks have some really weird and annoying default indentation behavior.  I think this has to do with electric-indent-mode, which is turned on by default in Emacs.  So let's turn it OFF!
+** Diminish Org Indent Mode
+Removes "Ind" from showing in the modeline.
 
 #+begin_src emacs-lisp
-  (electric-indent-mode -1)
+  (eval-after-load 'org-indent '(diminish 'org-indent-mode))
+#+end_src
+
+** Org Level Headers
+#+begin_src emacs-lisp
+  (custom-set-faces
+   '(org-level-1 ((t (:inherit outline-1 :height 1.7))))
+   '(org-level-2 ((t (:inherit outline-2 :height 1.6))))
+   '(org-level-3 ((t (:inherit outline-3 :height 1.5))))
+   '(org-level-4 ((t (:inherit outline-4 :height 1.4))))
+   '(org-level-5 ((t (:inherit outline-5 :height 1.3))))
+   '(org-level-6 ((t (:inherit outline-5 :height 1.2))))
+   '(org-level-7 ((t (:inherit outline-5 :height 1.1)))))
 #+end_src
 
 ** Source Code Block Tag Expansion
@@ -586,6 +686,35 @@ Org-tempo is not a separate package but a module within org that can be enabled.
   (require 'org-tempo)
 #+end_src
 
+* PERSPECTIVE
+[[https://github.com/nex3/perspective-el][Perspective]] provides multiple named workspaces (or "perspectives") in Emacs, similar to multiple desktops in window managers.  Each perspective has its own buffer list and its own window layout, along with some other isolated niceties, like the [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html][xref]] ring.
+
+#+begin_src emacs-lisp
+  (use-package perspective
+    :ensure t
+    :demand t
+    :custom
+    ;; NOTE! I have also set 'SCP =' to open the perspective menu.
+    ;; I'm only setting the additional binding because setting it
+    ;; helps suppress an annoying warning message.
+    (persp-mode-prefix-key (kbd "C-c M-p"))
+    :init 
+    (persp-mode)
+    :config
+    ;; Sets a file to write to when we save states
+    (setq persp-state-default-file "~/.config/emacs/sessions"))
+
+  ;; This will group buffers by persp-name in ibuffer.
+  (add-hook 'ibuffer-hook
+            (lambda ()
+              (persp-ibuffer-set-filter-groups)
+              (unless (eq ibuffer-sorting-mode 'alphabetic)
+                (ibuffer-do-sort-by-alphabetic))))
+
+  ;; Automatically save perspective states to file when Emacs exits.
+  (add-hook 'kill-emacs-hook #'persp-state-save)
+#+end_src
+
 * PROJECTILE
 [[https://github.com/bbatsov/projectile][Projectile]] is a project interaction library for Emacs.  It should be noted that many projectile commands do not work if you have set "fish" as the "shell-file-name" for Emacs.  I had initially set "fish" as the "shell-file-name" in the Vterm section of this config, but oddly enough I changed it to "bin/sh" and projectile now works as expected, and Vterm still uses "fish" because my default user "sh" on my Linux system is "fish".
 
@@ -605,6 +734,28 @@ Display the actual color as a background for any hex color value (ex. #ffffff). 
     :diminish
     :hook 
     ((org-mode prog-mode) . rainbow-mode))
+#+end_src
+
+* SANE DEFAULTS
+The following settings are simple modes that are enabled (or disabled) so that Emacs functions more like you would expect a proper editor/IDE to function.
+
+#+begin_src emacs-lisp
+  (delete-selection-mode 1)    ;; You can select text and delete it by typing.
+  (electric-indent-mode -1)    ;; Turn off the weird indenting that Emacs does by default.
+  (electric-pair-mode 1)       ;; Turns on automatic parens pairing
+  ;; The following prevents <> from auto-pairing when electric-pair-mode is on.
+  ;; Otherwise, org-tempo is broken when you try to <s TAB...
+  (add-hook 'org-mode-hook (lambda ()
+             (setq-local electric-pair-inhibit-predicate
+                     `(lambda (c)
+                    (if (char-equal c ?<) t (,electric-pair-inhibit-predicate c))))))
+  (global-auto-revert-mode t)  ;; Automatically show changes if the file has changed
+  (global-display-line-numbers-mode 1) ;; Display line numbers
+  (global-visual-line-mode t)  ;; Enable truncated lines
+  (menu-bar-mode -1)           ;; Disable the menu bar 
+  (scroll-bar-mode -1)         ;; Disable the scroll bar
+  (tool-bar-mode -1)           ;; Disable the tool bar
+  (setq org-edit-src-content-indentation 0) ;; Set src block automatic indent to 0 instead of 2.
 #+end_src
 
 * SHELLS AND TERMINALS
@@ -674,12 +825,7 @@ Vterm is a terminal emulator within Emacs.  The 'shell-file-name' setting sets t
 [[https://github.com/nflath/sudo-edit][sudo-edit]] gives us the ability to open files with sudo privileges or switch over to editing with sudo privileges if we initially opened the file without such privileges.
 
 #+begin_src emacs-lisp
-  (use-package sudo-edit
-    :ensure t
-    :config
-      (iron/leader-keys
-        "f u" '(sudo-edit-find-file :wk "Sudo find file")
-        "f U" '(sudo-edit :wk "Sudo edit file")))
+  (use-package sudo-edit :ensure t)
 #+end_src
 
 * THEME
@@ -687,15 +833,22 @@ The first of the two lines below designates the directory where will place all o
 
 #+begin_src emacs-lisp
   (add-to-list 'custom-theme-load-path "~/.config/emacs/themes/")
-  ;; (use-package doom-themes
-    ;; :ensure t
-    ;; :config
-    ;; (setq doom-themes-enable-bold t
-  	;; doom-themes-enable-italic t)
-    ;; (load-theme 'doom-rouge t)
-    ;; (doom-themes-org-config))
+  (use-package doom-themes
+    :ensure t
+    :config
+    (setq doom-themes-enable-bold t
+  	doom-themes-enable-italic t)
+    (load-theme 'doom-zenburn t)
+    (doom-themes-neotree-config)
+    (doom-themes-org-config))
 
-  (load-theme 'kanagawa t)
+  ;; (load-theme 'kanagawa t)
+#+end_src
+
+* TLDR
+
+#+begin_src emacs-lisp
+  (use-package tldr :ensure t)
 #+end_src
 
 * TRANSPARENCY
@@ -705,6 +858,7 @@ The first of the two lines below designates the directory where will place all o
 #+end_src
 
 * WHICH-KEY
+
 #+begin_src emacs-lisp
   (use-package which-key
     :ensure t
@@ -723,6 +877,6 @@ The first of the two lines below designates the directory where will place all o
   	  which-key-side-window-max-height 0.25
   	  which-key-idle-delay 0.8
   	  which-key-max-description-length 25
-  	  which-key-allow-imprecise-window-fit t
+  	  which-key-allow-imprecise-window-fit nil
   	  which-key-separator " → " ))
 #+end_src

@@ -1,0 +1,1 @@
+/home/derrick/.config/emacs/elpaca/repos/tldr/tldr.el
