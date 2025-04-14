@@ -18,6 +18,8 @@
   :ensure t
   :defer 2
   :diminish
+  ;; go autocomplete
+  :hook (go-mode . company-mode)
   :custom
   (company-begin-commands '(self-insert-command))
   (company-idle-delay .1)
@@ -132,6 +134,8 @@
   :demand t
   :defer t
   :diminish
+  ;; go syntax checking
+  :hook (go-mode . flycheck-mode)
   :init (global-flycheck-mode))
 
 (set-face-attribute 'default nil
@@ -374,7 +378,7 @@
     (evil-define-key 'normal git-timemachine-mode-map (kbd "C-k") 'git-timemachine-show-next-revision)
 )
 
-(use-package magit :ensure t)
+;; (use-package magit :ensure t)
 
 (use-package hl-todo
   :ensure t
@@ -429,6 +433,56 @@
 
 (use-package haskell-mode :ensure t)
 (use-package lua-mode :ensure t)
+
+;; Configure lsp-mode
+(use-package lsp-mode
+  :ensure t
+  :commands (lsp lsp-deferred)
+  :config
+  (setq lsp-prefer-flymake nil))
+
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode)
+
+(use-package company-lsp
+  :ensure t
+  :commands company-lsp)
+
+;; Install and configure go-mode
+(use-package go-mode
+  :ensure t
+  :hook ((go-mode . lsp-deferred)
+	 (before-save . gofmt-before-save))
+  :config
+  (setq tab-width 4)
+  (setq indent-tabs-mode 1))
+
+;; Function to run the current Go file
+(defun my-go-run ()
+  "Run the current Go file."
+  (interactive)
+  (let ((compile-command (concat "go run " buffer-file-name)))
+    (compile compile-command)))
+
+;; Function to build the current Go project
+(defun my-go-build ()
+  "Build the current Go project."
+  (interactive)
+  (compile "go build"))
+
+;; Function to test the current Go project
+(defun my-go-test ()
+  "Test the current Go project."
+  (interactive)
+  (compile "go test ./..."))
+
+;; Add key bindings for Go commands
+(add-hook 'go-mode-hook
+          (lambda ()
+            (local-set-key (kbd "C-c C-r") 'my-go-run)
+            (local-set-key (kbd "C-c C-b") 'my-go-build)
+            (local-set-key (kbd "C-c C-t") 'my-go-test)))
 
 (global-set-key [escape] 'keyboard-escape-quit)
 
