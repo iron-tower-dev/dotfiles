@@ -508,7 +508,8 @@ You can use the bindings CTRL plus =/- for zooming in/out.  You can also use CTR
 [[https://magit.vc/manual/][Magit]] is a full-featured git client for Emacs.
 
 #+begin_src emacs-lisp
-;; (use-package magit :ensure t)
+(use-package transient :ensure t)
+(use-package magit :ensure t)
 #+end_src
 
 * HIGHLIGHT TODO
@@ -592,9 +593,9 @@ Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM,
   :ensure t
   :commands lsp-ui-mode)
 
-(use-package company-lsp
-  :ensure t
-  :commands company-lsp)
+;; (use-package company-lsp
+  ;; :ensure t
+  ;; :commands company-lsp)
 #+end_src
 
 ** Golang Config

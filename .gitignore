@@ -1,0 +1,7 @@
+emacs/.config/emacs/elpaca/*
+emacs/.config/emacs/eln-cache/*
+emacs/.config/emacs/auto-save-list/*
+emacs/.config/emacs/transient/*
+projectile-bookmarks.eld
+recentf
+sessions

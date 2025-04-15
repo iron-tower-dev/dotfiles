@@ -89,3 +89,6 @@ eval "$(zoxide init --cmd cd zsh)"
 
 # Run color script
 colorscript random
+
+# Set GOPATH
+export GOPATH=$HOME/go

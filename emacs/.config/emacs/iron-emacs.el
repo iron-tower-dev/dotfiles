@@ -378,7 +378,8 @@
     (evil-define-key 'normal git-timemachine-mode-map (kbd "C-k") 'git-timemachine-show-next-revision)
 )
 
-;; (use-package magit :ensure t)
+(use-package transient :ensure t)
+(use-package magit :ensure t)
 
 (use-package hl-todo
   :ensure t
@@ -445,9 +446,9 @@
   :ensure t
   :commands lsp-ui-mode)
 
-(use-package company-lsp
-  :ensure t
-  :commands company-lsp)
+;; (use-package company-lsp
+  ;; :ensure t
+  ;; :commands company-lsp)
 
 ;; Install and configure go-mode
 (use-package go-mode
