@@ -6,7 +6,15 @@ return {
 
         configs.setup({
             ensure_installed = {
-                "c", "lua", "vim", "vimdoc", "query", "elixir", "heex", "javascript", "html", "markdown", "markdown_inline"
+                "c", "lua", "vim", "vimdoc", "query", 
+                "elixir", "heex", "surface",  -- Elixir
+                "javascript", "typescript", "tsx", "html", "css", -- JS/TS/Angular
+                "go", "gomod", "gowork", -- Go
+                "c_sharp", -- C#
+                "json", "yaml", "toml", "xml", -- Data formats
+                "markdown", "markdown_inline", "rst", -- Documentation
+                "bash", "fish", "nu", -- Shell scripts
+                "dockerfile", "gitignore", "gitcommit", -- DevOps
             },
             auto_install = true,
             sync_install = false,
