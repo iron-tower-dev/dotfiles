@@ -1,0 +1,135 @@
+# Example .mise.toml for project-specific tool versions
+# Place this file in your project root to specify tool versions for that project
+
+[tools]
+# Specify exact versions for consistent development environments
+node = "20.10.0"   # LTS version for stability
+python = "3.12.1"  # Latest stable Python
+go = "1.21.5"      # Latest stable Go
+rust = "1.75.0"    # Latest stable Rust
+
+# Frontend/JS ecosystem
+# bun = "latest"     # Alternative JS runtime
+# deno = "latest"    # Secure JS/TS runtime
+
+# Backend languages
+# java = "21"        # OpenJDK LTS
+# php = "8.3"        # Latest PHP
+# ruby = "3.3"       # Latest Ruby
+
+# DevOps tools
+# terraform = "latest"
+# kubectl = "latest"
+# helm = "latest"
+
+[env]
+# Project-specific environment variables
+NODE_ENV = "development"
+DEBUG = "1"
+API_URL = "http://localhost:3000"
+PORT = "3000"
+
+# Angular-specific environment variables (per your rules)
+NG_CLI_ANALYTICS = "false"
+NG_FORCE_TTY = "true"
+
+# Development database (example)
+DATABASE_URL = "postgresql://localhost:5432/myapp_dev"
+REDIS_URL = "redis://localhost:6379"
+
+[tasks.install]
+description = "Install all dependencies"
+run = "npm ci"
+
+[tasks.dev]
+description = "Start development server"
+run = [
+    "npm ci",
+    "npm run start"
+]
+depends = ["install"]
+
+[tasks."dev:angular"]
+description = "Start Angular development server"
+run = "ng serve --open --host 0.0.0.0"
+depends = ["install"]
+
+[tasks.test]
+description = "Run all tests"
+run = "npm test"
+
+[tasks."test:watch"]
+description = "Run tests in watch mode"
+run = "npm run test:watch"
+
+[tasks."test:e2e"]
+description = "Run end-to-end tests"
+run = "npm run e2e"
+
+[tasks.lint]
+description = "Lint code with ESLint"
+run = [
+    "npm run lint",
+    "npm run lint:fix"
+]
+
+[tasks.format]
+description = "Format code with Prettier"
+run = "npm run format"
+
+[tasks.build]
+description = "Build for production"
+run = [
+    "npm ci --production=false",
+    "npm run build:prod"
+]
+env = { NODE_ENV = "production" }
+
+[tasks."build:angular"]
+description = "Build Angular app for production"
+run = "ng build --configuration production"
+env = { NODE_ENV = "production" }
+
+[tasks.preview]
+description = "Preview production build locally"
+run = "npm run preview"
+depends = ["build"]
+
+[tasks.clean]
+description = "Clean build artifacts and dependencies"
+run = [
+    "rm -rf node_modules",
+    "rm -rf dist",
+    "rm -rf .angular/cache",
+    "npm cache clean --force"
+]
+
+[tasks.docker]
+description = "Build and run with Docker"
+run = [
+    "docker build -t myapp .",
+    "docker run -p 3000:3000 myapp"
+]
+
+[tasks."docker:dev"]
+description = "Run development environment with Docker Compose"
+run = "docker-compose up --build"
+
+[tasks.db]
+description = "Set up development database"
+run = [
+    "npm run db:setup",
+    "npm run db:seed"
+]
+
+[tasks."db:migrate"]
+description = "Run database migrations"
+run = "npm run db:migrate"
+
+[tasks.deploy]
+description = "Deploy to staging environment"
+run = [
+    "npm run build",
+    "npm run deploy:staging"
+]
+env = { NODE_ENV = "staging" }

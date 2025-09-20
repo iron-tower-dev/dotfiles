@@ -1,0 +1,46 @@
+# Default npm packages to install globally with each Node.js version
+# These will be automatically installed when a new Node.js version is installed
+
+# TypeScript and development tools
+typescript
+ts-node
+tsx
+@types/node
+
+# Linting and formatting
+eslint
+prettier
+@typescript-eslint/eslint-plugin
+@typescript-eslint/parser
+
+# Package management
+npm-check-updates
+npm-run-all
+
+# Development servers and tools
+http-server
+live-server
+nodemon
+
+# Build tools
+vite
+webpack
+rollup
+
+# Testing
+jest
+vitest
+playwright
+
+# Angular CLI (per your rules)
+@angular/cli
+
+# Utilities
+lodash
+axios
+dotenv
+
+# Development utilities
+concurrently
+cross-env
+rimraf

@@ -1,0 +1,94 @@
+# Mise Configuration
+# Modern tool version manager configuration
+
+[settings]
+# Enable experimental features
+experimental = true
+
+# Always keep downloaded files (saves bandwidth)
+always_keep_download = true
+
+# Use all CPU cores for compilation
+jobs = 0
+
+# Enable progress bars
+quiet = false
+
+# Use system curl/wget if available
+http_timeout = "30s"
+
+# Plugin management
+plugin_autoupdate_last_check_duration = "7d"
+trusted_config_paths = [
+    "~/dotfiles",
+    "~/projects",
+    "~/.config"
+]
+
+# Legacy version files support
+legacy_version_file = true
+legacy_version_file_disable_tools = []
+
+# Task configuration  
+task_output = "prefix"
+
+# Status configuration
+status = {
+    missing_tools = "if_other_versions_installed",
+    show_env = true,
+    show_tools = true
+}
+
+# Environment variables
+[env]
+# Set NODE_ENV for all Node.js projects
+NODE_ENV = "development"
+
+# Python settings
+PYTHONPATH = ""
+PIP_REQUIRE_VIRTUALENV = "true"
+
+# Go settings
+GOPROXY = "https://proxy.golang.org,direct"
+GOSUMDB = "sum.golang.org"
+
+# Rust settings
+CARGO_HOME = "~/.cargo"
+RUSTUP_HOME = "~/.rustup"
+
+# Default tools to install globally
+[tools]
+# Latest LTS versions by default
+node = "lts"
+python = "3.12"
+go = "latest"
+rust = "stable"
+
+# Optional tools (commented out - install as needed)
+# java = "21"
+# ruby = "3.3"
+# bun = "latest"  
+# deno = "latest"
+# php = "8.3"
+# elixir = "1.16"
+# erlang = "26"
+# zig = "latest"
+# terraform = "latest"
+# kubectl = "latest"
+# helm = "latest"
+
+[tasks.update]
+description = "Update all tools to latest versions"
+run = "mise upgrade"
+
+[tasks.doctor]
+description = "Check mise configuration and environment"
+run = "mise doctor"
+
+[tasks.clean]
+description = "Clean up unused tool versions"
+run = "mise prune --yes"
+
+# Plugin settings
+[plugins]
+# Use specific plugin repositories or settings if needed

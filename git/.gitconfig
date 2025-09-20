@@ -1,0 +1,174 @@
+[user]
+	# These will be configured by the setup script
+	name = Your Name
+	email = your.email@example.com
+
+[core]
+	editor = nvim
+	autocrlf = input
+	pager = delta
+	untrackedCache = true
+	preloadindex = true
+	fsmonitor = true
+
+[init]
+	defaultBranch = main
+
+[push]
+	default = simple
+	autoSetupRemote = true
+	followTags = true
+
+[pull]
+	rebase = true
+	ff = only
+
+[fetch]
+	prune = true
+	prunetags = true
+
+[rebase]
+	autoStash = true
+	autoSquash = true
+
+[merge]
+	conflictstyle = zdiff3
+	tool = nvimdiff
+
+[diff]
+	colorMoved = default
+	algorithm = histogram
+
+[color]
+	ui = auto
+	branch = auto
+	diff = auto
+	status = auto
+
+[color "branch"]
+	current = yellow bold
+	local = green bold
+	remote = cyan bold
+
+[color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red bold
+	new = green bold
+	whitespace = red reverse
+
+[color "status"]
+	added = green bold
+	changed = yellow bold
+	untracked = red bold
+
+# Basic aliases
+[alias]
+	# Status and info
+	st = status -sb
+	status-short = status -s
+	info = remote -v
+
+	# Branch operations
+	co = checkout
+	cob = checkout -b
+	coo = !git fetch && git checkout
+	br = branch
+	bra = branch -ra
+	brd = branch -d
+	brD = branch -D
+	bdm = "!git branch --merged | grep -v '*' | xargs -n 1 git branch -d"
+
+	# Commit operations
+	ci = commit
+	ca = commit -a
+	cm = commit -m
+	cam = commit -am
+	commend = commit --amend --no-edit
+	reword = commit --amend
+	undo = reset --soft HEAD~1
+	nuke = reset --hard HEAD
+
+	# Stash operations
+	sl = stash list
+	ss = stash save
+	sp = stash pop
+	sa = stash apply
+	sd = stash drop
+
+	# Log and history
+	lg = log --oneline --graph --decorate --all
+	lga = log --oneline --graph --decorate --all --abbrev-commit
+	lgb = log --oneline --graph --decorate --branches
+	last = log -1 HEAD
+	ll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --numstat
+	ls = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate
+	filelog = log -u
+	fl = log -u
+
+	# Diff operations
+	d = diff
+	dc = diff --cached
+	dt = difftool
+	dtc = difftool --cached
+
+	# Remote operations
+	f = fetch
+	fa = fetch --all
+	fo = fetch origin
+	push-new = !git push -u origin $(git branch --show-current)
+	push-force = push --force-with-lease
+	pf = push --force-with-lease
+
+	# Reset operations
+	unstage = reset HEAD --
+	r1 = reset HEAD~1 --mixed
+	r2 = reset HEAD~2 --mixed
+	rh1 = reset HEAD~1 --hard
+	rh2 = reset HEAD~2 --hard
+
+	# Show operations
+	show-files = show --pretty="" --name-only
+	show-branches = branch -a
+	show-tags = tag -l
+
+	# Merge and rebase
+	merge-no-ff = merge --no-ff
+	merge-squash = merge --squash
+	rebase-interactive = rebase -i
+	ri = rebase -i
+	rc = rebase --continue
+	ra = rebase --abort
+
+	# Utilities
+	aliases = config --get-regexp alias
+	ignored = ls-files --others --ignored --exclude-standard
+	assume = update-index --assume-unchanged
+	unassume = update-index --no-assume-unchanged
+	assumed = "!git ls-files -v | grep ^h | cut -c 3-"
+	whois = "!sh -c 'git log -i -1 --pretty=\"format:%an <%ae>\n\" --author=\"$1\"' -"
+	whatis = show -s --pretty='tformat:%h (%s, %ad)' --date=short
+
+# Delta configuration (if installed)
+[delta]
+	navigate = true
+	light = false
+	side-by-side = true
+	line-numbers = true
+
+[interactive]
+	diffFilter = delta --color-only
+
+# GitHub CLI integration
+[hub]
+	protocol = ssh
+
+# GPG signing (uncomment if you want to sign commits)
+# [commit]
+# 	gpgsign = true
+# [tag]
+# 	gpgsign = true
+
+# Include user-specific configurations
+[include]
+	path = ~/.gitconfig.local

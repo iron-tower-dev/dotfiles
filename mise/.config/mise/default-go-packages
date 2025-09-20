@@ -1,0 +1,30 @@
+# Default Go packages to install with each Go version
+# These will be automatically installed when a new Go version is installed
+
+# Development tools
+github.com/cosmtrek/air@latest
+github.com/go-delve/delve/cmd/dlv@latest
+golang.org/x/tools/gopls@latest
+golang.org/x/tools/cmd/goimports@latest
+golang.org/x/lint/golint@latest
+
+# Testing and quality
+github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+honnef.co/go/tools/cmd/staticcheck@latest
+github.com/securecode/gosec/v2/cmd/gosec@latest
+
+# Build tools
+github.com/goreleaser/goreleaser@latest
+github.com/mitchellh/gox@latest
+
+# Database tools
+github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+github.com/pressly/goose/v3/cmd/goose@latest
+
+# Web development
+github.com/gin-gonic/gin@latest
+github.com/gofiber/fiber/v2@latest
+
+# Utilities
+github.com/spf13/cobra-cli@latest
+github.com/joho/godotenv@latest

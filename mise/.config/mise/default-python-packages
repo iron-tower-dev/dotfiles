@@ -1,0 +1,52 @@
+# Default Python packages to install with each Python version
+# These will be automatically installed when a new Python version is installed
+
+# Package management
+pip
+setuptools
+wheel
+pipx
+
+# Development tools
+black
+flake8
+mypy
+autopep8
+isort
+pre-commit
+
+# Testing
+pytest
+pytest-cov
+pytest-xdist
+tox
+
+# Virtual environments
+virtualenv
+virtualenvwrapper
+
+# Jupyter and data science
+jupyter
+ipython
+notebook
+pandas
+numpy
+matplotlib
+seaborn
+requests
+
+# Web frameworks
+flask
+fastapi
+django
+
+# Utilities
+python-dotenv
+click
+rich
+typer
+pydantic
+
+# Documentation
+sphinx
+mkdocs

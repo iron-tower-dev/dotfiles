@@ -1,0 +1,419 @@
+@import "macchiato.css";
+
+* {
+  font-family: "JetBrains Mono Nerd Font", "FantasqueSansMono Nerd Font", monospace;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+#waybar {
+  background: transparent;
+  color: @text;
+  margin: 3px 10px 0px 10px;
+  transition: all 0.3s ease-in-out;
+}
+
+#workspaces {
+  border-radius: 8px;
+  margin: 3px 4px;
+  background: linear-gradient(45deg, @surface0, @surface1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid @surface2;
+  padding: 1px;
+}
+
+#workspaces button {
+  color: @text;
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 1px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+#workspaces button.active {
+  color: @base;
+  background: @blue;
+  border: 2px solid @lavender;
+  box-shadow: inset 0 0 0 1px @sky;
+}
+
+#workspaces button:hover {
+  color: @sapphire;
+  background: @surface2;
+  border: 2px solid @sapphire;
+  box-shadow: 0 2px 8px rgba(125, 196, 228, 0.3);
+}
+
+#workspaces button.urgent {
+  color: @red;
+  background: @surface0;
+  border: 2px solid @red;
+  animation: urgent-flash 1s ease-in-out infinite alternate;
+}
+
+@keyframes urgent-flash {
+  from { 
+    background: @surface0;
+    border-color: @red;
+  }
+  to { 
+    background: @red;
+    color: @base;
+  }
+}
+
+#window {
+  color: @text;
+  background: @surface0;
+  border-radius: 8px;
+  padding: 4px 12px;
+  margin: 3px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid @surface2;
+  transition: all 0.3s ease;
+}
+
+#window:hover {
+  background: @surface1;
+  border: 1px solid @overlay1;
+}
+
+#idle_inhibitor {
+  background: @surface0;
+  border-radius: 8px;
+  padding: 4px 10px;
+  margin: 3px 4px;
+  border: 1px solid @surface2;
+  transition: all 0.3s ease;
+}
+
+#idle_inhibitor.activated {
+  color: @green;
+  background: @surface1;
+  border: 1px solid @green;
+  box-shadow: 0 0 0 1px @green;
+}
+
+#idle_inhibitor.deactivated {
+  color: @overlay1;
+  background: @surface0;
+}
+
+/* Base module styling */
+.module {
+  background: @surface0;
+  border-radius: 8px;
+  padding: 4px 10px;
+  margin: 3px 4px;
+  transition: all 0.3s ease;
+  border: 1px solid @surface2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.module:hover {
+  background: @surface1;
+  border: 1px solid @overlay1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Individual modules */
+#custom-weather,
+#custom-media,
+#custom-network,
+#custom-cpu,
+#custom-memory,
+#custom-disk,
+#tray,
+#backlight,
+#clock,
+#battery,
+#pulseaudio,
+#custom-power {
+  background: @surface0;
+  border-radius: 8px;
+  padding: 4px 10px;
+  margin: 3px 4px;
+  transition: all 0.3s ease;
+  border: 1px solid @surface2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+#custom-weather:hover,
+#custom-media:hover,
+#custom-network:hover,
+#custom-cpu:hover,
+#custom-memory:hover,
+#custom-disk:hover,
+#tray:hover,
+#backlight:hover,
+#clock:hover,
+#battery:hover,
+#pulseaudio:hover,
+#custom-power:hover {
+  background: @surface1;
+  border: 1px solid @overlay1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Weather module */
+#custom-weather {
+  color: @yellow;
+  font-weight: bold;
+}
+
+#custom-weather.weather-hot {
+  color: @red;
+  background: @surface1;
+  border: 1px solid @red;
+}
+
+#custom-weather.weather-cold {
+  color: @blue;
+  background: @surface1;
+  border: 1px solid @blue;
+}
+
+#custom-weather.weather-mild {
+  color: @green;
+  background: @surface1;
+  border: 1px solid @green;
+}
+
+/* Media module */
+#custom-media {
+  color: @mauve;
+  background: @surface0;
+  border: 1px solid @mauve;
+}
+
+#custom-media.media-Playing {
+  color: @green;
+  border: 1px solid @green;
+  animation: media-pulse 2s ease-in-out infinite;
+}
+
+#custom-media.media-Paused {
+  color: @yellow;
+  border: 1px solid @yellow;
+}
+
+@keyframes media-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Network module */
+#custom-network {
+  color: @blue;
+}
+
+#custom-network.connected {
+  color: @green;
+  background: @surface1;
+  border: 1px solid @green;
+}
+
+#custom-network.limited {
+  color: @yellow;
+  background: @surface1;
+  border: 1px solid @yellow;
+}
+
+#custom-network.disconnected {
+  color: @red;
+  background: @surface1;
+  border: 1px solid @red;
+}
+
+/* System monitoring */
+#custom-cpu {
+  color: @red;
+  background: @surface0;
+  border: 1px solid @red;
+}
+
+#custom-memory {
+  color: @blue;
+  background: @surface0;
+  border: 1px solid @blue;
+}
+
+#custom-disk {
+  color: @yellow;
+  background: @surface0;
+  border: 1px solid @yellow;
+}
+
+/* Clock module */
+#clock {
+  color: @lavender;
+  background: @surface0;
+  font-weight: bold;
+  border: 1px solid @lavender;
+}
+
+/* Battery module */
+#battery {
+  color: @green;
+}
+
+#battery.charging {
+  color: @green;
+  background: @surface1;
+  border: 1px solid @green;
+  animation: battery-charging 1.5s linear infinite;
+}
+
+#battery.warning:not(.charging) {
+  color: @yellow;
+  background: @surface1;
+  border: 1px solid @yellow;
+}
+
+#battery.critical:not(.charging) {
+  color: @red;
+  background: @surface1;
+  border: 1px solid @red;
+  animation: battery-critical 1s ease-in-out infinite alternate;
+}
+
+@keyframes battery-charging {
+  0% {
+    background: @surface1;
+  }
+  50% {
+    background: @surface2;
+  }
+  100% {
+    background: @surface1;
+  }
+}
+
+@keyframes battery-critical {
+  from {
+    background: @surface1;
+  }
+  to {
+    background: @surface2;
+  }
+}
+
+/* Backlight module */
+#backlight {
+  color: @yellow;
+  background: @surface0;
+  border: 1px solid @yellow;
+}
+
+/* Audio module */
+#pulseaudio {
+  color: @pink;
+  background: @surface0;
+  border: 1px solid @pink;
+}
+
+#pulseaudio.muted {
+  color: @overlay1;
+  background: @surface0;
+  border: 1px solid @overlay1;
+}
+
+/* Power module */
+#custom-power {
+  color: @red;
+  background: @surface0;
+  border: 1px solid @red;
+  font-weight: bold;
+}
+
+#custom-power:hover {
+  color: @base;
+  background: @red;
+  border: 1px solid @red;
+  box-shadow: 0 4px 16px rgba(237, 135, 150, 0.5);
+}
+
+/* Tray */
+#tray {
+  background: @surface0;
+  border: 1px solid @surface2;
+}
+
+/* Tooltip styling */
+tooltip {
+  background: @base;
+  border: 2px solid @surface2;
+  border-radius: 8px;
+  color: @text;
+  font-family: "JetBrains Mono Nerd Font", monospace;
+  font-size: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+tooltip label {
+  color: @text;
+  margin: 0;
+  padding: 0;
+}
+
+/* Responsive design adjustments - commented out as waybar may not support @media queries
+@media (max-width: 1366px) {
+  * {
+    font-size: 13px;
+  }
+  
+  #workspaces button,
+  #window,
+  #idle_inhibitor,
+  #custom-weather,
+  #custom-media,
+  #custom-network,
+  #custom-cpu,
+  #custom-memory,
+  #custom-disk,
+  #tray,
+  #backlight,
+  #clock,
+  #battery,
+  #pulseaudio,
+  #custom-power {
+    padding: 4px 10px;
+    margin: 3px 1px;
+  }
+}
+
+@media (max-width: 1024px) {
+  #window {
+    max-width: 200px;
+  }
+  
+  #custom-weather,
+  #custom-media {
+    font-size: 12px;
+  }
+}
+*/
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+*:focus {
+  outline: 2px solid @blue;
+  outline-offset: 2px;
+}

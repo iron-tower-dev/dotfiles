@@ -1,0 +1,46 @@
+# Default Rust packages to install with each Rust version  
+# These will be automatically installed when a new Rust version is installed
+
+# Development tools
+cargo-edit
+cargo-watch
+cargo-expand
+cargo-outdated
+cargo-audit
+cargo-deny
+cargo-tarpaulin
+
+# Build and release tools
+cargo-release
+cargo-make
+cross
+
+# Linting and formatting
+clippy
+rustfmt
+
+# Documentation
+cargo-doc
+mdbook
+
+# Testing
+cargo-nextest
+
+# Web development
+cargo-generate
+wasm-pack
+
+# Utilities
+ripgrep
+fd-find
+bat
+exa
+tokei
+hyperfine
+bottom
+zoxide
+starship
+
+# Language servers and debugging
+rust-analyzer
+cargo-lldb

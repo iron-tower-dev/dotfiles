@@ -1,0 +1,289 @@
+@import "catppuccin-macchiato.rasi"
+
+configuration {
+    // Available modes with tabs
+    modi: "drun,run,window,ssh,filebrowser,combi";
+    
+    // Layout and appearance
+    font: "JetBrains Mono Nerd Font 12";
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    
+    // Window dimensions
+    width: 50;
+    lines: 12;
+    columns: 1;
+    
+    // Behavior
+    matching: "fuzzy";
+    sort: true;
+    sorting-method: "fzf";
+    case-sensitive: false;
+    cycle: true;
+    disable-history: false;
+    
+    // Display formats
+    drun-display-format: "{icon} {name}";
+    window-format: "{w} {c} {t}";
+    
+    // Terminal and commands
+    terminal: "kitty";
+    ssh-client: "ssh";
+    ssh-command: "{terminal} -e {ssh-client} {host} [-p {port}]";
+    run-shell-command: "{terminal} -e {cmd}";
+    
+    // File browser
+    filebrowser-directory: "/home/derrick";
+    
+    // Key bindings for mode switching
+    kb-mode-next: "Shift+Right,Control+Tab,Alt+Tab";
+    kb-mode-previous: "Shift+Left,Control+ISO_Left_Tab,Alt+Shift+Tab";
+    
+    // Tab display names with icons
+    display-drun: "󰀻 Apps";
+    display-run: " Run";
+    display-window: "󰖯 Windows";
+    display-ssh: "󰢹 SSH";
+    display-filebrowser: " Files";
+    display-combi: "󰕘 All";
+    
+    // Combi mode settings
+    combi-modi: "drun,run,window";
+    combi-hide-mode-prefix: false;
+}
+
+// Main window styling with potential background
+window {
+    transparency: "real";
+    location: center;
+    anchor: center;
+    fullscreen: false;
+    width: 800px;
+    x-offset: 0px;
+    y-offset: 0px;
+    background-color: @base;
+    border: 2px solid;
+    border-color: @surface2;
+    border-radius: 12px;
+    cursor: "default";
+}
+
+// Main container
+mainbox {
+    enabled: true;
+    spacing: 10px;
+    margin: 0px;
+    padding: 20px;
+    border: 0px solid;
+    border-radius: 0px;
+    border-color: @surface2;
+    background-color: transparent;
+    children: ["inputbar", "mode-switcher", "textbox-svg-border", "message", "listview"];
+}
+
+// Input bar styling
+inputbar {
+    enabled: true;
+    spacing: 10px;
+    margin: 0px 0px 10px 0px;
+    padding: 12px 16px;
+    border: 2px solid;
+    border-radius: 8px;
+    border-color: @surface1;
+    background-color: @mantle;
+    text-color: @text;
+    children: ["textbox-prompt-colon", "entry", "case-indicator"];
+}
+
+// Prompt styling
+textbox-prompt-colon {
+    enabled: true;
+    expand: false;
+    str: "󰍉";
+    padding: 0px 8px 0px 0px;
+    background-color: transparent;
+    text-color: @blue;
+    font: "JetBrains Mono Nerd Font 14";
+}
+
+// Entry field styling
+entry {
+    enabled: true;
+    background-color: transparent;
+    text-color: @text;
+    cursor: text;
+    placeholder: "Search...";
+    placeholder-color: @subtext0;
+}
+
+// Case indicator
+case-indicator {
+    enabled: true;
+    background-color: transparent;
+    text-color: @subtext1;
+}
+
+// Mode switcher (tabs) - clean without background
+mode-switcher {
+    enabled: true;
+    spacing: 4px;
+    margin: 0px;
+    padding: 0px 0px 8px 0px;
+    border: 0px solid;
+    border-bottom: 1px solid;
+    border-radius: 0px;
+    border-color: @overlay0;
+    background-color: transparent;
+    text-color: @text;
+}
+
+// Individual mode buttons (tabs)
+button {
+    padding: 8px 16px;
+    border: 0px solid;
+    border-radius: 6px;
+    border-color: @surface2;
+    background-color: @surface0;
+    text-color: @subtext1;
+    cursor: pointer;
+    font: "JetBrains Mono Nerd Font 10";
+}
+
+button selected {
+    background-color: @surface2;
+    text-color: @text;
+    border-color: @blue;
+    border: 1px solid;
+}
+
+// High-contrast SVG border - single instance
+textbox-svg-border {
+    enabled: true;
+    expand: false;
+    str: "";
+    background-color: transparent;
+    background-image: url("/home/derrick/.config/rofi/catppuccin-border-accent.svg", height);
+    margin: 5px 0px 10px 0px;
+    padding: 0px;
+    height: 75px;
+    width: 600px;
+    text-color: transparent;
+}
+
+// List view styling
+listview {
+    enabled: true;
+    columns: 1;
+    lines: 10;
+    cycle: true;
+    dynamic: true;
+    scrollbar: false;
+    layout: vertical;
+    reverse: false;
+    fixed-height: true;
+    fixed-columns: true;
+    spacing: 2px;
+    margin: 0px;
+    padding: 0px;
+    border: 0px solid;
+    border-radius: 0px;
+    border-color: @surface2;
+    background-color: transparent;
+    text-color: @text;
+    cursor: "default";
+}
+
+// Individual elements
+element {
+    enabled: true;
+    spacing: 8px;
+    margin: 0px;
+    padding: 10px;
+    border: 0px solid;
+    border-radius: 6px;
+    border-color: @surface2;
+    background-color: transparent;
+    text-color: @text;
+    cursor: pointer;
+}
+
+element normal.normal {
+    background-color: @surface0;
+    text-color: @text;
+}
+
+element selected.normal {
+    background-color: @surface1;
+    text-color: @lavender;
+    border: 1px solid;
+    border-color: @blue;
+}
+
+element alternate.normal {
+    background-color: transparent;
+    text-color: @text;
+}
+
+element normal.urgent {
+    background-color: @red;
+    text-color: @base;
+}
+
+element selected.urgent {
+    background-color: @maroon;
+    text-color: @base;
+}
+
+element normal.active {
+    background-color: @green;
+    text-color: @base;
+}
+
+element selected.active {
+    background-color: @teal;
+    text-color: @base;
+}
+
+// Element content styling
+element-icon {
+    background-color: transparent;
+    text-color: inherit;
+    size: 24px;
+    cursor: inherit;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    highlight: underline;
+    cursor: inherit;
+    vertical-align: 0.5;
+    horizontal-align: 0.0;
+}
+
+// Message styling
+message {
+    enabled: true;
+    margin: 0px;
+    padding: 0px;
+    border: 0px solid;
+    border-radius: 0px;
+    border-color: @surface2;
+    background-color: transparent;
+    text-color: @text;
+}
+
+textbox {
+    padding: 8px 12px;
+    border: 0px solid;
+    border-radius: 6px;
+    border-color: @surface2;
+    background-color: @surface0;
+    text-color: @text;
+    vertical-align: 0.5;
+    horizontal-align: 0.0;
+    highlight: none;
+    placeholder-color: @subtext0;
+    blink: true;
+    markup: true;
+}

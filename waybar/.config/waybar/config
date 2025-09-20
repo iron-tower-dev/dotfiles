@@ -1,0 +1,174 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 42,
+    "margin-top": 5,
+    "margin-left": 10,
+    "margin-right": 10,
+    "spacing": 5,
+    "modules-left": ["hyprland/workspaces", "hyprland/window", "custom/weather"],
+    "modules-center": ["custom/media"],
+    "modules-right": ["idle_inhibitor", "custom/network", "custom/cpu", "custom/memory", "custom/disk", "pulseaudio", "backlight", "battery", "clock", "tray", "custom/power"],
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "1": "󰲠",
+            "2": "󰲢",
+            "3": "󰲤",
+            "4": "󰲦",
+            "5": "󰲨",
+            "6": "󰲪",
+            "7": "󰲬",
+            "8": "󰲮",
+            "9": "󰲰",
+            "10": "󰿬",
+            "active": "󰮯",
+            "default": "󰊠",
+            "urgent": ""
+        },
+        "on-click": "activate",
+        "sort-by-number": true,
+        "show-special": false,
+        "persistent-workspaces": {
+            "*": [1, 2, 3, 4, 5]
+        }
+    },
+    "hyprland/window": {
+        "format": "{title}",
+        "max-length": 50,
+        "separate-outputs": true
+    },
+    "idle_inhibitor": {
+        "format": "{icon}",
+        "format-icons": {
+            "activated": "󰛐 ",
+            "deactivated": "󰛑 "
+        },
+        "tooltip-format-activated": "Idle inhibitor is active",
+        "tooltip-format-deactivated": "Idle inhibitor is inactive"
+    },
+    "custom/weather": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/weather.sh",
+        "interval": 600,
+        "tooltip": true,
+        "on-click": "xdg-open 'https://wttr.in/Phoenix,Arizona'"
+    },
+    "custom/media": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/media.sh",
+        "interval": 2,
+        "on-click": "playerctl play-pause",
+        "on-click-right": "playerctl next",
+        "on-click-middle": "playerctl previous",
+        "on-scroll-up": "playerctl volume 0.1+",
+        "on-scroll-down": "playerctl volume 0.1-",
+        "escape": true
+    },
+    "custom/network": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/network.sh",
+        "interval": 10,
+        "on-click": "nm-connection-editor"
+    },
+    "custom/cpu": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/system-info.sh cpu",
+        "interval": 3,
+        "on-click": "alacritty -e btop"
+    },
+    "custom/memory": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/system-info.sh memory",
+        "interval": 3,
+        "on-click": "alacritty -e btop"
+    },
+    "custom/disk": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/system-info.sh disk",
+        "interval": 30,
+        "on-click": "alacritty -e btop"
+    },
+    "tray": {
+        "icon-size": 18,
+        "spacing": 8,
+        "show-passive-items": true
+    },
+    "clock": {
+        "timezone": "America/Phoenix",
+        "format": " {:%H:%M}",
+        "format-alt": " {:%A, %B %d, %Y}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "mode-mon-col": 3,
+            "weeks-pos": "right",
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#ffead3'><b>{}</b></span>",
+                "days": "<span color='#ecc6d9'><b>{}</b></span>",
+                "weeks": "<span color='#99ffdd'><b>W{}</b></span>",
+                "weekdays": "<span color='#ffcc66'><b>{}</b></span>",
+                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
+            }
+        },
+        "actions": {
+            "on-click-right": "mode",
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down"
+        }
+    },
+    "backlight": {
+        "device": "intel_backlight",
+        "format": "{icon} {percent}%",
+        "format-icons": ["brightness_low", "brightness_medium", "brightness_high"],
+        "on-scroll-up": "brightnessctl set 5%+",
+        "on-scroll-down": "brightnessctl set 5%-",
+        "tooltip": true,
+        "tooltip-format": "Brightness: {percent}%"
+    },
+    "battery": {
+        "states": {
+            "good": 80,
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon} {capacity}%",
+        "format-charging": "battery_charging_full {capacity}%",
+        "format-plugged": "power {capacity}%",
+        "format-full": "battery_full {capacity}%",
+        "format-icons": ["battery_0_bar", "battery_1_bar", "battery_2_bar", "battery_3_bar", "battery_4_bar", "battery_5_bar", "battery_6_bar", "battery_full", "battery_full", "battery_full", "battery_full"],
+        "tooltip-format": "{timeTo}, {capacity}%\n{power}W",
+        "on-click": "gnome-power-statistics"
+    },
+    "pulseaudio": {
+        "scroll-step": 5,
+        "format": "{icon} {volume}%",
+        "format-muted": "volume_off Muted",
+        "format-icons": {
+            "headphone": "󰋋 ",
+            "hands-free": "󰍬 ",
+            "headset": "󰋎 ",
+            "phone": "󰏲 ",
+            "portable": "󰜟 ",
+            "car": "󰄋 ",
+            "default": ["[─]", "[▬]", "[█]"]
+        },
+        "on-click": "pavucontrol",
+        "on-click-right": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
+        "tooltip-format": "Volume: {volume}%\nDevice: {desc}"
+    },
+    "custom/power": {
+        "format": "󰐥",
+        "tooltip": true,
+        "tooltip-format": "Power Menu",
+        "on-click": "~/.config/waybar/scripts/power-menu.sh",
+        "on-click-right": "swaylock --grace 0"
+    }
+}

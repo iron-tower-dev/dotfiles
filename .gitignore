@@ -1,0 +1,76 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Logs
+*.log
+logs/
+
+# Local configuration files (these should be machine-specific)
+.env
+.env.local
+*.local
+!.gitconfig.local  # This is a template, should be included
+
+# Cache directories
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# Package managers
+node_modules/
+.npm/
+.yarn/
+
+# Build artifacts
+dist/
+build/
+target/
+*.o
+*.so
+*.dll
+
+# Personal/sensitive data
+secrets/
+private/
+.ssh/id_*
+.ssh/known_hosts
+.gnupg/
+.password-store/
+
+# Stow should ignore these
+.stow-local-ignore
+
+# Test files
+test/
+tests/
+*.test
+
+# Documentation build
+_site/
+.jekyll-cache/
+
+# Compiled binaries
+*.exe
+*.bin
