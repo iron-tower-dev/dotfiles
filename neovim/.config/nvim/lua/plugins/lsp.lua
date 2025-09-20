@@ -51,12 +51,50 @@ return {
       require("mason-lspconfig").setup_handlers({
         -- Default handler for servers
         function(server_name)
-          local server_config = require("lsp.servers." .. server_name)
-          if server_config then
+          -- Try to load server-specific configuration
+          local server_config_ok, server_config = pcall(require, "lsp.servers." .. server_name)
+          
+          if server_config_ok and server_config then
+            -- Use server-specific configuration
             require("lspconfig")[server_name].setup(server_config)
           else
-            -- Fallback to basic setup if no specific config exists
-            require("lspconfig")[server_name].setup(require("lsp.utils.defaults").get_default_config())
+            -- Fallback to default configuration
+            local defaults_ok, defaults = pcall(require, "lsp.utils.defaults")
+            
+            if defaults_ok then
+              require("lspconfig")[server_name].setup(defaults.get_default_config())
+              
+              -- Notify user about fallback (scheduled to avoid setup interruption)
+              vim.schedule(function()
+                vim.notify(
+                  string.format("LSP server '%s' using default config (custom config not found or failed to load)", server_name),
+                  vim.log.levels.WARN,
+                  { title = "LSP Setup" }
+                )
+              end)
+            else
+              -- Last resort: basic setup with minimal config
+              require("lspconfig")[server_name].setup({})
+              
+              vim.schedule(function()
+                vim.notify(
+                  string.format("LSP server '%s' using minimal config (defaults failed to load)", server_name),
+                  vim.log.levels.ERROR,
+                  { title = "LSP Setup" }
+                )
+              end)
+            end
+            
+            -- Log the original error for debugging if config load failed
+            if not server_config_ok then
+              vim.schedule(function()
+                vim.notify(
+                  string.format("Debug: Failed to load config for '%s': %s", server_name, server_config or "unknown error"),
+                  vim.log.levels.DEBUG,
+                  { title = "LSP Debug" }
+                )
+              end)
+            end
           end
         end,
       })

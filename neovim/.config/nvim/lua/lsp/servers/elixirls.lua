@@ -68,38 +68,35 @@ local config = {
 
     -- Run test under cursor
     buf_map("n", "<leader>eT", function()
-      vim.lsp.buf.execute_command({
-        command = "spec:run",
-        arguments = { vim.fn.expand("%:p"), vim.fn.line(".") },
-      })
+      local file = vim.fn.expand("%:p")
+      local line = vim.fn.line(".")
+      vim.cmd("split | terminal mix test " .. vim.fn.fnameescape(file) .. ":" .. line)
     end, { desc = "Run Test Under Cursor" })
 
     -- Pipe operator
     buf_map("n", "<leader>ep", function()
-      vim.lsp.buf.code_action({
-        context = {
-          only = { "elixir.toPipe" },
-          diagnostics = {},
-        },
+      vim.lsp.buf.execute_command({
+        command = "manipulatePipes:toPipe",
+        arguments = { vim.uri_from_fname(vim.fn.expand("%:p")) },
       })
     end, { desc = "Convert to Pipe" })
 
     -- From pipe operator
     buf_map("n", "<leader>eP", function()
-      vim.lsp.buf.code_action({
-        context = {
-          only = { "elixir.fromPipe" },
-          diagnostics = {},
-        },
+      vim.lsp.buf.execute_command({
+        command = "manipulatePipes:fromPipe",
+        arguments = { vim.uri_from_fname(vim.fn.expand("%:p")) },
       })
     end, { desc = "Convert from Pipe" })
 
     -- Expand macro
     buf_map("n", "<leader>em", function()
-      vim.lsp.buf.code_action({
-        context = {
-          only = { "elixir.expandMacro" },
-          diagnostics = {},
+      local params = vim.lsp.util.make_position_params()
+      vim.lsp.buf.execute_command({
+        command = "expandMacro",
+        arguments = {
+          vim.uri_from_bufnr(0),
+          params.position,
         },
       })
     end, { desc = "Expand Macro" })
@@ -111,16 +108,22 @@ local config = {
 
     -- Restart ElixirLS
     buf_map("n", "<leader>er", function()
-      vim.lsp.buf.execute_command({
-        command = "elixir.restart",
-        arguments = {},
-      })
+      local elixir_clients = vim.lsp.get_clients({ name = "elixirls" })
+      if #elixir_clients == 0 then
+        vim.notify("No ElixirLS clients found", vim.log.levels.WARN)
+        return
+      end
+      
+      for _, client in ipairs(elixir_clients) do
+        vim.lsp.stop_client(client.id, true)
+      end
+      
+      vim.notify(string.format("Restarted %d ElixirLS client(s)", #elixir_clients), vim.log.levels.INFO)
     end, { desc = "Restart ElixirLS" })
 
     -- Show docs for module under cursor
     buf_map("n", "<leader>ed", function()
-      local word = vim.fn.expand("<cword>")
-      vim.cmd("split | terminal h " .. word)
+      vim.lsp.buf.hover()
     end, { desc = "Show Documentation" })
 
     -- IEx integration
@@ -145,7 +148,10 @@ local config = {
   commands = {
     ElixirRestart = {
       function()
-        vim.lsp.stop_client(vim.lsp.get_clients())
+        local elixir_clients = vim.lsp.get_clients({ name = "elixirls" })
+        for _, client in ipairs(elixir_clients) do
+          vim.lsp.stop_client(client.id, true)
+        end
         vim.cmd("edit")
       end,
       description = "Restart ElixirLS",
@@ -174,7 +180,8 @@ local config = {
     ElixirRunTests = {
       function()
         local file = vim.fn.expand("%:p")
-        vim.cmd("split | terminal mix test " .. file)
+        local escaped_file = vim.fn.shellescape(file)
+        vim.cmd("split | terminal mix test " .. escaped_file)
       end,
       description = "Run tests for current file",
     },

@@ -144,7 +144,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
 -- Auto-install language servers when opening supported files
 local auto_install_group = vim.api.nvim_create_augroup("LspAutoInstall", { clear = true })
 
--- Map filetypes to their corresponding LSP servers
+-- Map filetypes to their corresponding LSP servers (lspconfig names)
 local filetype_to_server = {
   lua = "lua_ls",
   typescript = "ts_ls",
@@ -161,28 +161,50 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
   pattern = "*",
   callback = function(args)
     local filetype = vim.bo[args.buf].filetype
-    local server_name = filetype_to_server[filetype]
+    local lspconfig_server_name = filetype_to_server[filetype]
     
-    if server_name then
-      -- Check if server is installed
-      local mason_registry = require("mason-registry")
-      if mason_registry.is_installed(server_name) then
+    if lspconfig_server_name then
+      -- Get mason-lspconfig mappings to convert lspconfig names to Mason package names
+      local mason_lspconfig_ok, mason_lspconfig = pcall(require, "mason-lspconfig")
+      if not mason_lspconfig_ok then
+        return
+      end
+      
+      local mappings = mason_lspconfig.get_mappings()
+      local package_name = mappings.lspconfig_to_package[lspconfig_server_name]
+      
+      if not package_name then
+        -- Skip if no mapping exists (server might not be available via Mason)
+        return
+      end
+      
+      -- Check if server package is installed
+      local mason_registry_ok, mason_registry = pcall(require, "mason-registry")
+      if not mason_registry_ok then
+        return
+      end
+      
+      local package_ok, package = pcall(mason_registry.get_package, package_name)
+      if not package_ok then
+        return
+      end
+      
+      if package:is_installed() then
         return
       end
       
       -- Show notification that server will be installed
       vim.notify(
-        string.format("Installing LSP server '%s' for %s files...", server_name, filetype),
+        string.format("Installing LSP server '%s' (%s) for %s files...", package_name, lspconfig_server_name, filetype),
         vim.log.levels.INFO,
         { title = "LSP Auto-install" }
       )
       
       -- Install the server
-      local package = mason_registry.get_package(server_name)
       package:install():once("closed", function()
         vim.schedule(function()
           vim.notify(
-            string.format("LSP server '%s' installed successfully!", server_name),
+            string.format("LSP server '%s' installed successfully!", package_name),
             vim.log.levels.INFO,
             { title = "LSP Auto-install" }
           )

@@ -143,26 +143,100 @@ The LSP configuration is automatically loaded when you open supported files. Mas
 
 ### Manual Installation
 
+#### Registry Setup
+
+The configuration includes a custom Mason registry for Roslyn LSP. If you need to manually register it:
+
 ```bash
-# Install language servers manually
+# The custom registry is automatically configured in lua/plugins/lsp.lua
+# But if you need to verify or troubleshoot:
 :Mason
-# Or via command line
+# Check that "github:Crashdummyy/mason-registry" appears in registries
+```
+
+#### Language Server Installation
+
+**Important**: Before installing via Mason, verify package availability:
+
+```bash
+# Open Mason UI to verify available packages
+:Mason
+
+# Install language servers manually (verify IDs first)
 :MasonInstall ts_ls angularls elixirls gopls roslyn
 ```
+
+**Note for Go and Elixir**: These languages are managed via [Mise](../../../mise/.config/mise/) in this repository:
+
+```bash
+# Use mise instead of Mason for Go and Elixir runtimes
+mise install go@latest     # Installs Go with gopls
+mise install elixir@latest # Installs Elixir with ElixirLS
+
+# See setup/system/setup-mise.sh for automated setup
+./setup/system/setup-mise.sh
+```
+
+#### Prerequisites by Language
+
+**C# (Roslyn)**:
+- **.NET SDK**: Required for compilation and project management
+  ```bash
+  # Arch Linux
+  sudo pacman -S dotnet-sdk
+  
+  # Verify installation
+  dotnet --version
+  ```
+- **Debug Support**: See [Debug Adapters](#debug-adapters) section below
+- **Configuration**: See [roslyn.lua](servers/roslyn.lua) for detailed settings
 
 ### Debug Adapters
 
 Some debugging features require additional tools:
 
+**Go Debugging**:
 ```bash
-# Go debugging (via Mise)
-mise install go@latest  # includes delve
+# Via Mise (recommended - see setup/system/setup-mise.sh)
+mise install go@latest  # Includes delve debugger
 
-# .NET debugging
-sudo pacman -S netcoredbg  # or appropriate package manager
+# Verify delve installation
+dlv version
+```
 
-# JavaScript/TypeScript debugging
+**C# Debugging**:
+```bash
+# Install .NET Core debugger (required for Roslyn)
+# Arch Linux
+sudo pacman -S netcoredbg
+
+# Other distributions
+# Ubuntu/Debian: sudo apt install netcoredbg
+# Fedora: sudo dnf install netcoredbg
+
+# Verify installation
+netcoredbg --version
+```
+**Note**: C# debugging also requires .NET SDK (see [Prerequisites](#prerequisites-by-language))
+
+**JavaScript/TypeScript Debugging**:
+```bash
+# Install VS Code JS debugger
 npm install -g @vscode/js-debug
+
+# Alternative: Install via Mise if you manage Node.js that way
+mise install node@lts
+npm install -g @vscode/js-debug
+```
+
+**Elixir Debugging**:
+```bash
+# Requires Elixir installation via Mise
+mise install elixir@latest
+
+# Debug adapter is typically included with ElixirLS
+# If needed separately:
+mix escript.install github elixir-lsp/elixir_debug_adapter
 ```
 
 ## Configuration

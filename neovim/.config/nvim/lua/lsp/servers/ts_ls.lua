@@ -169,11 +169,12 @@ local config = {
 
     -- Go to source definition (useful for .d.ts files)
     buf_map("n", "gS", function()
-      vim.lsp.buf.code_action({
-        apply = true,
-        context = {
-          only = { "source.definition" },
-          diagnostics = {},
+      local params = vim.lsp.util.make_position_params()
+      vim.lsp.buf.execute_command({
+        command = "_typescript.goToSourceDefinition",
+        arguments = {
+          vim.uri_from_bufnr(0),
+          params.position,
         },
       })
     end, { desc = "Go to Source Definition" })

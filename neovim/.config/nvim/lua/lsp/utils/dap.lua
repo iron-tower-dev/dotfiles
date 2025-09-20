@@ -4,9 +4,10 @@
 -- ================================================================================================
 
 local dap = require("dap")
-local dapui = require("dapui")
+local ok_dapui, dapui = pcall(require, "dapui")
 
 -- Configure DAP UI
+if ok_dapui then
 dapui.setup({
   icons = { expanded = "▾", collapsed = "▸", current_frame = "▸" },
   mappings = {
@@ -69,9 +70,12 @@ dapui.setup({
     max_value_lines = 100, -- Can be integer or nil.
   }
 })
+end
 
 -- Configure virtual text
-require("nvim-dap-virtual-text").setup({
+local ok_vtext, vtext = pcall(require, "nvim-dap-virtual-text")
+if ok_vtext then
+vtext.setup({
   enabled = true,
   enabled_commands = true,
   highlight_changed_variables = true,
@@ -93,18 +97,13 @@ require("nvim-dap-virtual-text").setup({
   virt_lines = false,
   virt_text_win_col = nil
 })
+end
 
 -- Automatically open/close DAP UI
-dap.listeners.after.event_initialized["dapui_config"] = function()
-  dapui.open()
-end
-
-dap.listeners.before.event_terminated["dapui_config"] = function()
-  dapui.close()
-end
-
-dap.listeners.before.event_exited["dapui_config"] = function()
-  dapui.close()
+if ok_dapui then
+  dap.listeners.after.event_initialized["dapui_config"] = function() dapui.open() end
+  dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end
+  dap.listeners.before.event_exited["dapui_config"] = function() dapui.close() end
 end
 
 -- Configure DAP signs
@@ -303,15 +302,16 @@ end
 
 --- List all breakpoints
 function M.list_breakpoints()
-  local breakpoints = dap.list_breakpoints()
-  if #breakpoints == 0 then
-    print("No breakpoints set")
-    return
+  local bps = dap.list_breakpoints()
+  local any = false
+  for bufnr, items in pairs(bps) do
+    local fname = vim.api.nvim_buf_get_name(bufnr)
+    for _, bp in ipairs(items) do
+      any = true
+      print(string.format("%s:%d %s", fname, bp.line, bp.condition or bp.logMessage or ""))
+    end
   end
-  
-  for _, bp in ipairs(breakpoints) do
-    print(string.format("%s:%d - %s", bp.filename, bp.line, bp.condition or ""))
-  end
+  if not any then print("No breakpoints set") end
 end
 
 --- Step over
@@ -346,12 +346,12 @@ end
 
 --- Toggle DAP UI
 function M.toggle_ui()
-  dapui.toggle()
+  if ok_dapui then dapui.toggle() end
 end
 
 --- Evaluate expression under cursor
 function M.eval_under_cursor()
-  dapui.eval()
+  if ok_dapui then dapui.eval() end
 end
 
 return M

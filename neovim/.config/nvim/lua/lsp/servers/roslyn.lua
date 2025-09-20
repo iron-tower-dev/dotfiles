@@ -49,6 +49,26 @@ local config = {
     -- Call the default on_attach
     defaults.on_attach(client, bufnr)
 
+    -- Helper function to get LSP root directory
+    local function get_root_dir()
+      return client.config.root_dir or vim.fn.getcwd()
+    end
+
+    -- Helper function to run dotnet commands securely
+    local function run_dotnet_command(args, desc)
+      vim.cmd("split")
+      vim.fn.termopen({"dotnet", unpack(args)}, {
+        cwd = get_root_dir(),
+        on_exit = function(_, code)
+          if code ~= 0 then
+            vim.notify(string.format("%s failed with exit code %d", desc, code), vim.log.levels.ERROR)
+          else
+            vim.notify(string.format("%s completed successfully", desc), vim.log.levels.INFO)
+          end
+        end,
+      })
+    end
+
     -- C#-specific keymaps
     local function buf_map(mode, lhs, rhs, opts)
       opts = opts or {}
@@ -59,39 +79,39 @@ local config = {
 
     -- Build project
     buf_map("n", "<leader>cb", function()
-      vim.cmd("split | terminal dotnet build")
+      run_dotnet_command({"build"}, "Build")
     end, { desc = "Build Project" })
 
     -- Run project
     buf_map("n", "<leader>cr", function()
-      vim.cmd("split | terminal dotnet run")
+      run_dotnet_command({"run"}, "Run")
     end, { desc = "Run Project" })
 
     -- Test project
     buf_map("n", "<leader>ct", function()
-      vim.cmd("split | terminal dotnet test")
+      run_dotnet_command({"test"}, "Test")
     end, { desc = "Test Project" })
 
     -- Test with coverage
     buf_map("n", "<leader>cT", function()
-      vim.cmd("split | terminal dotnet test --collect:\"XPlat Code Coverage\"")
+      run_dotnet_command({"test", "--collect:XPlat Code Coverage"}, "Test with Coverage")
     end, { desc = "Test with Coverage" })
 
     -- Restore packages
     buf_map("n", "<leader>cR", function()
-      vim.cmd("split | terminal dotnet restore")
+      run_dotnet_command({"restore"}, "Restore")
     end, { desc = "Restore Packages" })
 
     -- Clean project
     buf_map("n", "<leader>cC", function()
-      vim.cmd("split | terminal dotnet clean")
+      run_dotnet_command({"clean"}, "Clean")
     end, { desc = "Clean Project" })
 
     -- Add package
     buf_map("n", "<leader>cp", function()
       local package = vim.fn.input("Package name: ")
       if package ~= "" then
-        vim.cmd("split | terminal dotnet add package " .. package)
+        run_dotnet_command({"add", "package", package}, "Add Package")
       end
     end, { desc = "Add Package" })
 
@@ -99,7 +119,7 @@ local config = {
     buf_map("n", "<leader>cP", function()
       local package = vim.fn.input("Package name to remove: ")
       if package ~= "" then
-        vim.cmd("split | terminal dotnet remove package " .. package)
+        run_dotnet_command({"remove", "package", package}, "Remove Package")
       end
     end, { desc = "Remove Package" })
 
@@ -173,7 +193,7 @@ local config = {
 
     -- Show project info
     buf_map("n", "<leader>ci", function()
-      vim.cmd("split | terminal dotnet --info")
+      run_dotnet_command({"--info"}, "Project Info")
     end, { desc = "Show Project Info" })
   end,
 
@@ -204,31 +224,76 @@ local config = {
   commands = {
     CSharpBuild = {
       function()
-        vim.cmd("split | terminal dotnet build")
+        local lspconfig = require("lspconfig")
+        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        vim.cmd("split")
+        vim.fn.termopen({"dotnet", "build"}, {
+          cwd = root_dir,
+          on_exit = function(_, code)
+            local msg = code == 0 and "Build completed successfully" or "Build failed with exit code " .. code
+            vim.notify(msg, code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR)
+          end,
+        })
       end,
       description = "Build C# project",
     },
     CSharpRun = {
       function()
-        vim.cmd("split | terminal dotnet run")
+        local lspconfig = require("lspconfig")
+        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        vim.cmd("split")
+        vim.fn.termopen({"dotnet", "run"}, {
+          cwd = root_dir,
+          on_exit = function(_, code)
+            local msg = code == 0 and "Run completed successfully" or "Run failed with exit code " .. code
+            vim.notify(msg, code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR)
+          end,
+        })
       end,
       description = "Run C# project",
     },
     CSharpTest = {
       function()
-        vim.cmd("split | terminal dotnet test")
+        local lspconfig = require("lspconfig")
+        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        vim.cmd("split")
+        vim.fn.termopen({"dotnet", "test"}, {
+          cwd = root_dir,
+          on_exit = function(_, code)
+            local msg = code == 0 and "Test completed successfully" or "Test failed with exit code " .. code
+            vim.notify(msg, code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR)
+          end,
+        })
       end,
       description = "Test C# project",
     },
     CSharpRestore = {
       function()
-        vim.cmd("split | terminal dotnet restore")
+        local lspconfig = require("lspconfig")
+        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        vim.cmd("split")
+        vim.fn.termopen({"dotnet", "restore"}, {
+          cwd = root_dir,
+          on_exit = function(_, code)
+            local msg = code == 0 and "Restore completed successfully" or "Restore failed with exit code " .. code
+            vim.notify(msg, code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR)
+          end,
+        })
       end,
       description = "Restore NuGet packages",
     },
     CSharpClean = {
       function()
-        vim.cmd("split | terminal dotnet clean")
+        local lspconfig = require("lspconfig")
+        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        vim.cmd("split")
+        vim.fn.termopen({"dotnet", "clean"}, {
+          cwd = root_dir,
+          on_exit = function(_, code)
+            local msg = code == 0 and "Clean completed successfully" or "Clean failed with exit code " .. code
+            vim.notify(msg, code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR)
+          end,
+        })
       end,
       description = "Clean C# project",
     },
@@ -243,21 +308,33 @@ local config = {
   -- Handler overrides for better C# experience
   handlers = {
     ["textDocument/definition"] = function(err, result, method, ...)
-      -- Custom definition handler to handle C# metadata
+      -- Custom definition handler to handle C# metadata and deduplicate results
       if vim.tbl_islist(result) and #result > 1 then
         local filtered_result = {}
         local seen_uris = {}
+        local fallback_counter = 0
         
         for _, res in ipairs(result) do
-          if not seen_uris[res.uri] then
+          -- Handle both Location and LocationLink objects
+          local uri = res.uri or res.targetUri
+          
+          -- Guard against nil uri with unique fallback
+          if not uri then
+            fallback_counter = fallback_counter + 1
+            uri = "__fallback__" .. fallback_counter
+          end
+          
+          -- Deduplicate while preserving original order
+          if not seen_uris[uri] then
             table.insert(filtered_result, res)
-            seen_uris[res.uri] = true
+            seen_uris[uri] = true
           end
         end
         
         return vim.lsp.handlers["textDocument/definition"](err, filtered_result, method, ...)
       end
       
+      -- Pass through original result when no filtering needed
       return vim.lsp.handlers["textDocument/definition"](err, result, method, ...)
     end,
   },
