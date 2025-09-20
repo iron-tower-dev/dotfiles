@@ -142,6 +142,7 @@ deploy_dotfiles() {
         "mise"
         "zsh"
         "git"
+        "neovim"
         "themes"
     )
     

@@ -27,6 +27,7 @@ GIT_EMAIL=""
 SSH_KEY_TYPE="ed25519"
 SSH_KEY_FILE=""
 GITHUB_INTEGRATION=false
+GITHUB_USERNAME=""
 
 # Display banner
 display_banner() {
@@ -338,6 +339,16 @@ setup_github_integration() {
     
     GITHUB_INTEGRATION=true
     
+    # Get GitHub username
+    while [[ -z "$GITHUB_USERNAME" ]]; do
+        read -p "Enter your GitHub username: " GITHUB_USERNAME
+        if [[ -z "$GITHUB_USERNAME" ]]; then
+            log_warning "GitHub username cannot be empty. Please try again."
+        fi
+    done
+    
+    log_info "GitHub username: $GITHUB_USERNAME"
+    
     # Check if GitHub CLI is installed
     if command -v gh &> /dev/null; then
         log_success "GitHub CLI found"
@@ -446,6 +457,9 @@ show_summary() {
     
     if [[ "$GITHUB_INTEGRATION" == true ]]; then
         echo "${GREEN}✓${NC} GitHub integration configured"
+        if [[ -n "${GITHUB_USERNAME:-}" ]]; then
+            echo "  Username: $GITHUB_USERNAME"
+        fi
         echo
     fi
     
@@ -460,7 +474,11 @@ show_summary() {
     echo
     
     log_success "Git setup completed successfully!"
-    echo "You can now clone repositories with: ${CYAN}git clone git@github.com:username/repo.git${NC}"
+    if [[ -n "${GITHUB_USERNAME:-}" ]]; then
+        echo "You can now clone repositories with: ${CYAN}git clone git@github.com:$GITHUB_USERNAME/repo.git${NC}"
+    else
+        echo "You can now clone repositories with: ${CYAN}git clone git@github.com:username/repo.git${NC}"
+    fi
 }
 
 # Main execution
