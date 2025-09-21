@@ -107,6 +107,9 @@ in
       geoclue2.enable = true;
     };
 
+    # Enable Bluetooth hardware support
+    hardware.bluetooth.enable = true;
+
     # Enable NVIDIA support if requested
     hardware.nvidia = mkIf cfg.nvidia {
       modesetting.enable = true;
