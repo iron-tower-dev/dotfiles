@@ -120,24 +120,25 @@ in
     };
 
     # Configure environment variables for Hyprland
-    environment.sessionVariables = {
-      # Wayland
-      XDG_CURRENT_DESKTOP = "Hyprland";
-      XDG_SESSION_TYPE = "wayland";
-      XDG_SESSION_DESKTOP = "Hyprland";
-      
-      # NVIDIA specific (if enabled)
-      GBM_BACKEND = mkIf cfg.nvidia "nvidia-drm";
-      LIBVA_DRIVER_NAME = mkIf cfg.nvidia "nvidia";
-      __GLX_VENDOR_LIBRARY_NAME = mkIf cfg.nvidia "nvidia";
-      
-      # Qt/GTK theming
-      QT_QPA_PLATFORMTHEME = "qt5ct";
-      QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
-      
-      # Firefox Wayland
-      MOZ_ENABLE_WAYLAND = "1";
-    };
+    environment.sessionVariables =
+      {
+        # Wayland
+        XDG_CURRENT_DESKTOP = "Hyprland";
+        XDG_SESSION_TYPE = "wayland";
+        XDG_SESSION_DESKTOP = "Hyprland";
+      }
+      // lib.optionalAttrs cfg.nvidia {
+        GBM_BACKEND = "nvidia-drm";
+        LIBVA_DRIVER_NAME = "nvidia";
+        __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+      }
+      // {
+        # Qt/GTK theming
+        QT_QPA_PLATFORMTHEME = "qt5ct";
+        QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+        # Firefox Wayland
+        MOZ_ENABLE_WAYLAND = "1";
+      };
 
     # Security settings
     security = {
