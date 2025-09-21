@@ -167,10 +167,10 @@
     "custom/wallpaper": {
         "format": "{}",
         "return-type": "json",
-        "exec": "~/.config/waybar/scripts/wallpaper.sh status",
+        "exec": "~/.config/waybar/scripts/wallpaper-wrapper.sh status",
         "interval": 30,
-        "on-click": "~/.config/waybar/scripts/wallpaper.sh set",
-        "on-click-right": "waypaper",
+        "on-click": "~/.config/waybar/scripts/wallpaper-wrapper.sh set",
+        "on-click-right": "waypaper || ~/.config/waybar/scripts/wallpaper.sh set",
         "tooltip": true,
         "escape": true
     },

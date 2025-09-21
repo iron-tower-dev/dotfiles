@@ -35,8 +35,8 @@ log_success() {
 check_swww_daemon() {
     if ! pgrep -x swww-daemon > /dev/null; then
         log_info "Starting swww daemon..."
-        swww init &
-        sleep 2
+        nohup swww-daemon >/dev/null 2>&1 &
+        sleep 3
     fi
 }
 
@@ -110,14 +110,14 @@ set_wallpaper() {
 
 # Output JSON for Waybar (when called without arguments)
 output_waybar_json() {
-    local icon="🎨"
+    local icon="󰸉"
     local text="$icon"
     local tooltip="Click to set random wallpaper"
     local class="wallpaper"
     
     # Check if swww daemon is running
     if ! pgrep -x swww-daemon > /dev/null; then
-        icon="🎨"
+        icon="󰸉"
         class="wallpaper-inactive"
         tooltip="Wallpaper daemon not running - click to start and set wallpaper"
     fi

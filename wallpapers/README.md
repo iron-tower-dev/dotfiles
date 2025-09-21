@@ -16,6 +16,9 @@ This directory contains wallpapers for the Hyprland desktop environment. The wal
 - **Right Click**: Open waypaper GUI for manual selection
 - **Tooltip**: Shows current status and click instructions
 
+### Via Keyboard Shortcut
+- **Super + W**: Set random wallpaper (configured in Hyprland)
+
 ### Via Command Line
 ```bash
 # Set random wallpaper
