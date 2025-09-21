@@ -100,32 +100,20 @@ in
       };
     };
 
-    # Install SDDM dependencies and theme
+    # Install SDDM dependencies and themes
     environment.systemPackages = with pkgs; [
       # SDDM Qt dependencies
       libsForQt5.qt5.qtquickcontrols2
       libsForQt5.qt5.qtgraphicaleffects
       
-      # Use packaged Catppuccin SDDM theme
+      # Catppuccin SDDM themes - available in Nix store at /run/current-system/sw/share/sddm/themes
       catppuccin-sddm
+      catppuccinTheme
     ];
 
-    # Create symlink for the theme
-    system.activationScripts.sddmTheme = ''
+    # Create minimal SDDM configuration directory
+    system.activationScripts.sddmConfig = ''
       mkdir -p /var/lib/sddm/.config
-      
-      # Create SDDM theme directories
-      mkdir -p /usr/share/sddm/themes
-      
-      # Link Catppuccin theme variants
-      for variant in macchiato mocha frappe latte; do
-        for accent in rosewater flamingo pink mauve red maroon peach yellow green teal sky sapphire blue lavender; do
-          theme_name="catppuccin-$variant-$accent"
-          if [ ! -e "/usr/share/sddm/themes/$theme_name" ]; then
-            ln -sf ${catppuccinTheme}/share/sddm/themes/catppuccin-macchiato "/usr/share/sddm/themes/$theme_name" || true
-          fi
-        done
-      done
     '';
 
     # Configure SDDM user Qt settings
