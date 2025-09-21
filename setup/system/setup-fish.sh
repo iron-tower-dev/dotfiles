@@ -122,11 +122,11 @@ fish -c "
 
 log_success "Fish abbreviations configured"
 
-# Enable Starship prompt
-if command -v starship &> /dev/null; then
-    log_info "Starship prompt is available and will be initialized in Fish config"
+# Enable Oh My Posh prompt
+if command -v oh-my-posh &> /dev/null; then
+    log_info "Oh My Posh is available and will be initialized in Fish config"
 else
-    log_warning "Starship prompt not found. Install it for a better prompt experience."
+    log_warning "Oh My Posh not found. Install it for a better prompt experience."
 fi
 
 # Enable zoxide if available
@@ -146,7 +146,7 @@ echo "  - Catppuccin Macchiato theming"
 echo "  - Useful abbreviations and functions"
 echo "  - Fisher plugin manager"
 echo "  - FZF integration"
-echo "  - Starship prompt (if available)"
+echo "  - Oh My Posh prompt (if available)"
 echo
 log_warning "To start using Fish immediately, run: fish"
 log_warning "Or log out and log back in to use Fish as your default shell"

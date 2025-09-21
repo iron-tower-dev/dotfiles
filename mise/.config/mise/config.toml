@@ -5,6 +5,7 @@ experimental = true
 quiet = false
 
 [tools]
+node = "22.19.0"
 usage = "latest"
 uv = "latest"
 

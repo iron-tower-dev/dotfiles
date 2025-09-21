@@ -1,0 +1,15 @@
+// Default Zellij layout
+// Simple layout with a single pane and tab bar
+
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+    }
+
+    tab name="main" {
+        pane
+    }
+}

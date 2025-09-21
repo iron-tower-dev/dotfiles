@@ -1,0 +1,18 @@
+// Catppuccin Macchiato theme for Zellij
+// Based on https://github.com/catppuccin/catppuccin
+
+themes {
+    catppuccin-macchiato {
+        bg "#24273a"         // base
+        fg "#cad3f5"         // text
+        red "#ed8796"        // red
+        green "#a6da95"      // green
+        blue "#8aadf4"       // blue
+        yellow "#eed49f"     // yellow
+        magenta "#f5bde6"    // pink
+        orange "#f5a97f"     // peach
+        cyan "#8bd5ca"       // teal
+        black "#1e2030"      // mantle
+        white "#f4dbd6"      // rosewater
+    }
+}

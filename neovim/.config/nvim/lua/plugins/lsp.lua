@@ -7,7 +7,8 @@ return {
   -- Mason: Package manager for LSP servers, formatters, and debuggers
   {
     "williamboman/mason.nvim",
-    cmd = "Mason",
+    lazy = false,
+    priority = 900,
     build = ":MasonUpdate",
     opts = {
       ui = {
@@ -31,7 +32,8 @@ return {
       "williamboman/mason.nvim",
       "neovim/nvim-lspconfig",
     },
-    event = { "BufReadPre", "BufNewFile" },
+    lazy = false,
+    priority = 800,
     opts = {
       -- Servers to automatically install via Mason
       ensure_installed = {
@@ -49,66 +51,86 @@ return {
       local mason_lspconfig = require("mason-lspconfig")
       mason_lspconfig.setup(opts)
       
-      -- Setup handlers for automatic server configuration
-      if mason_lspconfig.setup_handlers then
-        mason_lspconfig.setup_handlers({
-        -- Default handler for servers
-        function(server_name)
-          -- Try to load server-specific configuration
-          local server_config_ok, server_config = pcall(require, "lsp.servers." .. server_name)
-          
-          if server_config_ok and server_config then
-            -- Use server-specific configuration
-            require("lspconfig")[server_name].setup(server_config)
-          else
-            -- Fallback to default configuration
-            local defaults_ok, defaults = pcall(require, "lsp.utils.defaults")
-            
-            if defaults_ok then
-              require("lspconfig")[server_name].setup(defaults.get_default_config())
-              
-              -- Notify user about fallback (scheduled to avoid setup interruption)
-              vim.schedule(function()
-                vim.notify(
-                  string.format("LSP server '%s' using default config (custom config not found or failed to load)", server_name),
-                  vim.log.levels.WARN,
-                  { title = "LSP Setup" }
-                )
-              end)
-            else
-              -- Last resort: basic setup with minimal config
-              require("lspconfig")[server_name].setup({})
-              
-              vim.schedule(function()
-                vim.notify(
-                  string.format("LSP server '%s' using minimal config (defaults failed to load)", server_name),
-                  vim.log.levels.ERROR,
-                  { title = "LSP Setup" }
-                )
-              end)
-            end
-            
-            -- Log the original error for debugging if config load failed
-            if not server_config_ok then
-              vim.schedule(function()
-                vim.notify(
-                  string.format("Debug: Failed to load config for '%s': %s", server_name, server_config or "unknown error"),
-                  vim.log.levels.DEBUG,
-                  { title = "LSP Debug" }
-                )
-              end)
-            end
-          end
-        end,
-        })
+      -- Function to setup a single server using new vim.lsp.config API
+      local function setup_server(server_name)
         
-        -- Manual setup for Roslyn (from custom registry)
-        local roslyn_ok, roslyn_config = pcall(require, "lsp.servers.roslyn")
-        if roslyn_ok and roslyn_config then
-          require("lspconfig").roslyn.setup(roslyn_config)
+        -- Try to load server-specific configuration
+        local server_config_ok, server_config = pcall(require, "lsp.servers." .. server_name)
+        
+        local config
+        if server_config_ok and server_config then
+          -- Use server-specific configuration
+          config = server_config
+        else
+          -- Fallback to default configuration
+          local defaults_ok, defaults = pcall(require, "lsp.utils.defaults")
+          config = (defaults_ok and defaults) and defaults.get_default_config() or {}
         end
-      else
-        vim.notify("mason-lspconfig.setup_handlers not available", vim.log.levels.ERROR)
+        
+        -- Use new vim.lsp.config API if available, fallback to lspconfig
+        local setup_ok = pcall(function()
+          if vim.lsp.config and vim.lsp.config[server_name] then
+            vim.lsp.config[server_name](config)
+          else
+            -- Fallback to lspconfig for compatibility
+            require("lspconfig")[server_name].setup(config)
+          end
+        end)
+        
+        if not setup_ok then
+          vim.schedule(function()
+            vim.notify(
+              string.format("Failed to setup LSP server: %s", server_name),
+              vim.log.levels.WARN,
+              { title = "LSP Setup" }
+            )
+          end)
+        end
+      end
+      
+      -- Setup handlers for automatic server configuration
+      local setup_handlers_ok, _ = pcall(function()
+        if mason_lspconfig.setup_handlers then
+          mason_lspconfig.setup_handlers({
+            -- Default handler for servers
+            setup_server,
+          })
+        else
+          -- Fallback: manually setup servers from ensure_installed list
+          for _, server_name in ipairs(opts.ensure_installed or {}) do
+            setup_server(server_name)
+          end
+        end
+      end)
+      
+      if not setup_handlers_ok then
+        vim.schedule(function()
+          vim.notify(
+            "Failed to setup LSP handlers, falling back to manual setup",
+            vim.log.levels.WARN,
+            { title = "LSP Setup" }
+          )
+        end)
+        
+        -- Fallback: manually setup essential servers
+        local essential_servers = { "lua_ls", "ts_ls", "gopls" }
+        for _, server_name in ipairs(essential_servers) do
+          pcall(setup_server, server_name)
+        end
+      end
+      
+      -- Manual setup for Roslyn (from custom registry)
+      local roslyn_ok, roslyn_config = pcall(require, "lsp.servers.roslyn")
+      if roslyn_ok and roslyn_config then
+        pcall(function()
+          -- Use new vim.lsp.config API if available, fallback to lspconfig
+          if vim.lsp.config and vim.lsp.config.roslyn then
+            vim.lsp.config.roslyn(roslyn_config)
+          else
+            -- Fallback to lspconfig for compatibility
+            require("lspconfig").roslyn.setup(roslyn_config)
+          end
+        end)
       end
     end,
   },
@@ -116,7 +138,8 @@ return {
   -- Core LSP configuration
   {
     "neovim/nvim-lspconfig",
-    event = { "BufReadPre", "BufNewFile" },
+    lazy = false,
+    priority = 700,
     dependencies = {
       "williamboman/mason-lspconfig.nvim",
       "saghen/blink.cmp", -- For completion capabilities

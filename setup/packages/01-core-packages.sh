@@ -47,9 +47,9 @@ CORE_PACKAGES=(
     "polkit-gnome"         # Authentication agent
     "dunst"                # Notification daemon
     "libnotify"            # Notification library
+    "zsh"                  # Z shell
     "fish"                  # Modern shell
     "nushell"              # Structured data shell
-    "starship"             # Modern prompt
     "exa"                  # Modern ls replacement
     "bat"                  # Modern cat replacement
     "fd"                   # Modern find replacement
@@ -59,6 +59,7 @@ CORE_PACKAGES=(
     "fastfetch"            # System info tool
     "direnv"               # Directory-based environment
     "mise"                 # Programming language version manager
+    "zellij"               # Modern terminal multiplexer
 )
 
 # Wayland/Hyprland specific packages

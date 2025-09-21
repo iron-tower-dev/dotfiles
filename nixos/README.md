@@ -89,7 +89,7 @@ Before deployment, you may want to customize:
 ### Development Environment
 - **Neovim**: Links to existing Neovim configuration from dotfiles
 - **Fish Shell**: Modern shell with syntax highlighting and completions
-- **Starship**: Cross-shell prompt with Git integration
+- **Oh My Posh**: Cross-shell prompt with Git integration and transient prompts
 - **Git**: Enhanced configuration with 50+ aliases and delta integration
 - **Development Tools**: Modern CLI replacements (bat, eza, ripgrep, etc.)
 

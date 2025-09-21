@@ -210,8 +210,8 @@ local config = {
 
   -- Root directory patterns for C# projects
   root_dir = function(fname)
-    local lspconfig = require("lspconfig")
-    return lspconfig.util.root_pattern(
+    local util = require("lspconfig.util")
+    return util.root_pattern(
       "*.sln",
       "*.csproj", 
       "omnisharp.json",
@@ -224,8 +224,8 @@ local config = {
   commands = {
     CSharpBuild = {
       function()
-        local lspconfig = require("lspconfig")
-        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        local util = require("lspconfig.util")
+        local root_dir = util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
         vim.cmd("split")
         vim.fn.termopen({"dotnet", "build"}, {
           cwd = root_dir,
@@ -239,8 +239,8 @@ local config = {
     },
     CSharpRun = {
       function()
-        local lspconfig = require("lspconfig")
-        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        local util = require("lspconfig.util")
+        local root_dir = util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
         vim.cmd("split")
         vim.fn.termopen({"dotnet", "run"}, {
           cwd = root_dir,
@@ -254,8 +254,8 @@ local config = {
     },
     CSharpTest = {
       function()
-        local lspconfig = require("lspconfig")
-        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        local util = require("lspconfig.util")
+        local root_dir = util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
         vim.cmd("split")
         vim.fn.termopen({"dotnet", "test"}, {
           cwd = root_dir,
@@ -269,8 +269,8 @@ local config = {
     },
     CSharpRestore = {
       function()
-        local lspconfig = require("lspconfig")
-        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        local util = require("lspconfig.util")
+        local root_dir = util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
         vim.cmd("split")
         vim.fn.termopen({"dotnet", "restore"}, {
           cwd = root_dir,
@@ -284,8 +284,8 @@ local config = {
     },
     CSharpClean = {
       function()
-        local lspconfig = require("lspconfig")
-        local root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
+        local util = require("lspconfig.util")
+        local root_dir = util.root_pattern("*.sln", "*.csproj", ".git")(vim.fn.expand("%:p")) or vim.fn.getcwd()
         vim.cmd("split")
         vim.fn.termopen({"dotnet", "clean"}, {
           cwd = root_dir,

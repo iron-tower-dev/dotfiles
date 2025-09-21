@@ -34,7 +34,7 @@ in
       nushell
       
       # Shell enhancements
-      starship # Modern prompt
+      # oh-my-posh # Modern prompt (installed via AUR/pacman, not available in nixpkgs)
     ];
 
     # Fish configuration
@@ -47,13 +47,9 @@ in
       };
     };
 
-    # Starship prompt
-    programs.starship = {
-      enable = true;
-      settings = {
-        # Starship will be configured through Home Manager
-        # This enables it system-wide
-      };
-    };
+    # Oh My Posh prompt (replaces Starship)
+    # Oh My Posh is not available in nixpkgs, so it's installed via AUR/pacman
+    # Configuration is managed through dotfiles with the unified config file:
+    # ~/.config/catppuccin-macchiato.omp.toml
   };
 }

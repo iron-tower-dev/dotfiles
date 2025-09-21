@@ -1,0 +1,42 @@
+// Development layout for Zellij
+// Layout with editor, terminal, and monitoring panes
+
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+    }
+
+    tab name="code" focus=true {
+        pane split_direction="vertical" {
+            pane split_direction="horizontal" {
+                pane size="70%" {
+                    command "nvim"
+                }
+                pane split_direction="vertical" size="30%" {
+                    pane name="terminal"
+                    pane name="logs" {
+                        command "tail"
+                        args "-f" "/var/log/syslog"
+                    }
+                }
+            }
+        }
+    }
+
+    tab name="git" {
+        pane {
+            command "git"
+            args "status"
+        }
+    }
+
+    tab name="files" {
+        pane {
+            command "exa"
+            args "--tree" "--level=2"
+        }
+    }
+}

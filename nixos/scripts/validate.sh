@@ -173,7 +173,8 @@ validate_shared_resources() {
         "git"
         "neovim"
         "fish"
-        "starship"
+        "nushell"
+        "zsh"
         "mise"
     )
     

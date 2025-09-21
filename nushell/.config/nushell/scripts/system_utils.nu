@@ -18,12 +18,12 @@ def "cputop" [--count (-n): int = 10] {
 
 # Disk usage with human readable sizes
 def "diskinfo" [] {
-  df -h | from ssv | select Filesystem Size Used Avail "Use%" "Mounted on"
+  ^df -h | from ssv | select Filesystem Size Used Avail "Use%" "Mounted on"
 }
 
 # Show listening ports
 def "ports" [] {
-  netstat -tlnp 2>/dev/null | lines | skip 2 | where $it != "" | each { |line|
+  ^netstat -tlnp 2>/dev/null | lines | skip 2 | where $it != "" | each { |line|
     let parts = ($line | split row " " | where $it != "")
     if ($parts | length) >= 4 {
       {
@@ -38,7 +38,7 @@ def "ports" [] {
 
 # Show network connections
 def "netconns" [] {
-  ss -tuln | lines | skip 1 | where $it != "" | each { |line|
+  ^ss -tuln | lines | skip 1 | where $it != "" | each { |line|
     let parts = ($line | str trim | split row " " | where $it != "")
     if ($parts | length) >= 5 {
       {
@@ -56,7 +56,7 @@ def "netconns" [] {
 # Temperature monitoring (if sensors available)
 def "temps" [] {
   if (which sensors | is-not-empty) {
-    sensors | lines | where $it =~ "°C" | each { |line|
+    ^sensors | lines | where $it =~ "°C" | each { |line|
       let parts = ($line | str trim | parse -r '(?P<sensor>.*?):\s+\+?(?P<temp>\d+\.\d+)°C')
       if ($parts | length) > 0 {
         {
@@ -73,48 +73,48 @@ def "temps" [] {
 
 # System load information
 def "loadinfo" [] {
-  let uptime_output = (uptime | str trim)
-  let load_parts = ($uptime_output | parse -r '.*load average: (?P<load1>\d+\.\d+), (?P<load5>\d+\.\d+), (?P<load15>\d+\.\d+)')
+  let uptime_output = (^uptime | str trim)
+  let load_parts = ($uptime_output | parse -r '.*load average: (?P<load1>\\d+\\.\\d+), (?P<load5>\\d+\\.\\d+), (?P<load15>\\d+\\.\\d+)')
   
   if ($load_parts | length) > 0 {
     {
       load_1min: ($load_parts.0.load1 | into float)
       load_5min: ($load_parts.0.load5 | into float)
       load_15min: ($load_parts.0.load15 | into float)
-      cpu_cores: (nproc | into int)
+      cpu_cores: (^nproc | into int)
     }
   }
 }
 
 # Find files by name pattern
 def "findname" [pattern: string, path: string = "."] {
-  find $path -name $pattern -type f | lines
+  ^find $path -name $pattern -type f | lines
 }
 
 # Find files by content
 def "findcontent" [pattern: string, path: string = "."] {
   if (which rg | is-not-empty) {
-    rg --files-with-matches $pattern $path | lines
+    ^rg --files-with-matches $pattern $path | lines
   } else {
-    grep -r -l $pattern $path | lines
+    ^grep -r -l $pattern $path | lines
   }
 }
 
 # Show file type distribution in directory
 def "filetypes" [path: string = "."] {
   ls $path -a | where type == file | get name | each { |file|
-    $file | path extension
+    $file | path parse | get extension
   } | group-by | transpose extension count | sort-by count -r
 }
 
 # Monitor file changes (simple version)
 def "watch-file" [file: string, --interval (-i): int = 1] {
-  let original_time = (stat $file | get modified)
+  let original_time = (^stat -c %Y $file | into int)
   print $"Watching ($file) for changes... (Ctrl+C to stop)"
   
   loop {
-    sleep $"($interval)sec"
-    let current_time = (stat $file | get modified)
+    sleep ($interval | into duration --unit sec)
+    let current_time = (^stat -c %Y $file | into int)
     if $current_time != $original_time {
       print $"(date now | format date '%Y-%m-%d %H:%M:%S'): File ($file) changed"
       let original_time = $current_time
@@ -129,23 +129,23 @@ def "cleanup" [] {
   # Clean package cache
   if (which pacman | is-not-empty) {
     print "Cleaning pacman cache..."
-    sudo pacman -Scc --noconfirm
+    ^sudo pacman -Scc --noconfirm
   }
   
   # Clean user cache
   if ("~/.cache" | path exists) {
     print "Cleaning user cache..."
-    let cache_size = (du ~/.cache | get apparent)
+    let cache_size = (^du -sh ~/.cache | lines | first | split column "\t" size path | get size | first)
     print $"Cache size before: ($cache_size)"
-    rm -rf ~/.cache/*
-    let new_cache_size = (du ~/.cache | get apparent)
+    ^rm -rf ~/.cache/*
+    let new_cache_size = (^du -sh ~/.cache | lines | first | split column "\t" size path | get size | first)
     print $"Cache size after: ($new_cache_size)"
   }
   
   # Clean temporary files
   if ("/tmp" | path exists) {
     print "Cleaning temporary files..."
-    sudo find /tmp -type f -atime +7 -delete 2>/dev/null
+    ^sudo find /tmp -type f -atime +7 -delete 2>/dev/null
   }
   
   print "Cleanup completed!"
@@ -158,19 +158,19 @@ def "backup-system" [backup_dir: string] {
   
   # Backup important configs
   print "Backing up configurations..."
-  cp -r ~/.config $"($backup_dir)/config"
+  ^cp -r ~/.config $"($backup_dir)/config"
   
   # Backup installed packages list
   print "Backing up package list..."
-  pacman -Qqe | save $"($backup_dir)/packages.txt"
+  ^pacman -Qqe | save $"($backup_dir)/packages.txt"
   
   if (which paru | is-not-empty) {
-    paru -Qqem | save $"($backup_dir)/aur-packages.txt"
+    ^paru -Qqem | save $"($backup_dir)/aur-packages.txt"
   }
   
   # Backup crontab
   if (which crontab | is-not-empty) {
-    crontab -l | save $"($backup_dir)/crontab.txt"
+    ^crontab -l | save $"($backup_dir)/crontab.txt"
   }
   
   print $"Backup completed in ($backup_dir)"
@@ -199,7 +199,7 @@ def "hwinfo" [] {
   
   # GPU info (if available)
   if (which lspci | is-not-empty) {
-    let gpu_info = (lspci | lines | where $it =~ "VGA")
+    let gpu_info = (^lspci | lines | where $it =~ "VGA")
     if ($gpu_info | length) > 0 {
       print $"GPU: (($gpu_info | first) | split row ': ' | get 1)"
     }
@@ -207,7 +207,7 @@ def "hwinfo" [] {
   
   # Disk info
   print "Disk Usage:"
-  df -h | from ssv | select Filesystem Size Used Avail "Use%" "Mounted on" | where "Mounted on" == "/"
+  ^df -h | from ssv | select Filesystem Size Used Avail "Use%" "Mounted on" | where "Mounted on" == "/"
 }
 
 # Network speed test (simple)
@@ -215,10 +215,10 @@ def "speedtest" [] {
   if (which curl | is-not-empty) {
     print "Testing internet connection speed..."
     print "Download test:"
-    curl -o /dev/null -w "Downloaded at %{speed_download} bytes/sec\n" -s http://speedtest.wdc01.softlayer.com/downloads/test10.zip
+    ^curl -o /dev/null -w "Downloaded at %{speed_download} bytes/sec\n" -s http://speedtest.wdc01.softlayer.com/downloads/test10.zip
     
     print "Upload test (approximate):"
-    curl -o /dev/null -w "Upload speed: %{speed_upload} bytes/sec\n" -s -F "file=@/dev/zero" http://httpbin.org/post
+    ^curl -o /dev/null -w "Upload speed: %{speed_upload} bytes/sec\n" -s -F "file=@/dev/zero" http://httpbin.org/post
   } else {
     print "curl not found. Please install curl to run speed test."
   }
@@ -230,7 +230,7 @@ def "sysmon" [--interval (-i): int = 2] {
   print "=============================="
   
   loop {
-    clear
+    ^clear
     print $"(date now | format date '%Y-%m-%d %H:%M:%S')"
     print ""
     
@@ -239,7 +239,7 @@ def "sysmon" [--interval (-i): int = 2] {
     print $"Load: ($load.load_1min) ($load.load_5min) ($load.load_15min)"
     
     # Memory usage
-    let mem_info = (free | lines | get 1 | split row " " | where $it != "")
+    let mem_info = (^free | lines | get 1 | split row " " | where $it != "")
     let mem_used = ($mem_info | get 2 | into int)
     let mem_total = ($mem_info | get 1 | into int)
     let mem_percent = (($mem_used * 100) / $mem_total | math round)
@@ -250,7 +250,7 @@ def "sysmon" [--interval (-i): int = 2] {
     print "Top CPU processes:"
     ps | sort-by cpu -r | first 5 | select name pid cpu | table
     
-    sleep $"($interval)sec"
+    sleep ($interval | into duration --unit sec)
   }
 }
 

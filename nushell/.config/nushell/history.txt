@@ -1,0 +1,8 @@
+ls -la
+ls
+cd .config/
+exit
+pwd
+ls
+ls -la
+c

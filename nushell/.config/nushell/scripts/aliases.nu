@@ -2,7 +2,7 @@
 # Modern command replacements and useful shortcuts
 
 # Modern command replacements (if available)
-def --env setup_modern_commands [] {
+def setup_modern_commands [] {
   # exa/eza as ls replacement
   if (which exa | is-not-empty) {
     alias ls = exa --icons --group-directories-first
@@ -63,7 +63,11 @@ alias c = clear
 alias h = history
 alias j = jobs
 alias q = exit
-alias reload = source ~/.config/nushell/config.nu
+# Custom reload function (avoids circular import by not reloading full config)
+def "reload" [] {
+  print "Note: Use 'exit' and start nu again to fully reload configuration"
+  print "Or manually source specific files as needed"
+}
 
 # Navigation aliases
 alias .. = cd ..
@@ -82,7 +86,7 @@ alias pacc = sudo pacman -Scc      # Clear cache
 alias paclf = pacman -Ql           # List files
 
 # AUR helper aliases (if paru is installed)
-def --env setup_aur_aliases [] {
+def setup_aur_aliases [] {
   if (which paru | is-not-empty) {
     alias yay = paru
     alias yays = paru -S
@@ -92,7 +96,7 @@ def --env setup_aur_aliases [] {
 }
 
 # Docker aliases (if docker is installed)
-def --env setup_docker_aliases [] {
+def setup_docker_aliases [] {
   if (which docker | is-not-empty) {
     alias dk = docker
     alias dkps = docker ps
@@ -118,13 +122,30 @@ alias cp = cp -i
 alias mv = mv -i
 alias rm = rm -i
 
-# Quick edit configs
-alias nushellconfig = $env.EDITOR ~/.config/nushell/config.nu
-alias fishconfig = $env.EDITOR ~/.config/fish/config.fish
-alias hyprconfig = $env.EDITOR ~/.config/hypr/hyprland.conf
-alias waybarconfig = $env.EDITOR ~/.config/waybar/config
-alias nvimconfig = $env.EDITOR ~/.config/nvim/init.lua
-alias miseconfig = $env.EDITOR ~/.config/mise/config.toml
+# Quick edit configs (using functions instead of aliases for expressions)
+def "nushellconfig" [] {
+  ^$env.EDITOR ~/.config/nushell/config.nu
+}
+
+def "fishconfig" [] {
+  ^$env.EDITOR ~/.config/fish/config.fish
+}
+
+def "hyprconfig" [] {
+  ^$env.EDITOR ~/.config/hypr/hyprland.conf
+}
+
+def "waybarconfig" [] {
+  ^$env.EDITOR ~/.config/waybar/config
+}
+
+def "nvimconfig" [] {
+  ^$env.EDITOR ~/.config/nvim/init.lua
+}
+
+def "miseconfig" [] {
+  ^$env.EDITOR ~/.config/mise/config.toml
+}
 
 # Mise aliases
 alias mls = mise ls           # List installed tools
@@ -148,47 +169,48 @@ def "backup" [file: string] {
 }
 
 def "extract" [file: string] {
-  match ($file | path extension) {
-    "zip" => { unzip $file }
-    "tar" => { tar -xf $file }
+  let extension = ($file | path parse | get extension)
+  match $extension {
+    "zip" => { ^unzip $file }
+    "tar" => { ^tar -xf $file }
     "gz" => { 
       if ($file | str ends-with ".tar.gz") {
-        tar -xzf $file
+        ^tar -xzf $file
       } else {
-        gunzip $file
+        ^gunzip $file
       }
     }
     "bz2" => {
       if ($file | str ends-with ".tar.bz2") {
-        tar -xjf $file
+        ^tar -xjf $file
       } else {
-        bunzip2 $file
+        ^bunzip2 $file
       }
     }
     "xz" => {
       if ($file | str ends-with ".tar.xz") {
-        tar -xJf $file
+        ^tar -xJf $file
       } else {
-        unxz $file
+        ^unxz $file
       }
     }
-    "7z" => { 7z x $file }
-    "rar" => { unrar x $file }
+    "7z" => { ^7z x $file }
+    "rar" => { ^unrar x $file }
     _ => { print $"Unknown archive format: ($file)" }
   }
 }
 
 # Show directory sizes
 def "duf" [path = "."] {
-  ls $path | where type == dir | insert size { |it| du $it.name | get apparent } | sort-by size -r | select name size
+  ls $path | where type == dir | insert size { |it| ^du -s $it.name | lines | first | split column "\t" size name | get size | first } | sort-by size -r | select name size
 }
 
 # Find large files
 def "bigfiles" [size = "100MB", path = "."] {
-  find $path -type f -size +$size | each { |file|
+  ^find $path -type f -size +$size | lines | each { |file|
     {
       name: $file
-      size: (ls -l $file | get size | first)
+      size: (try { ls $file | get size | first } catch { "unknown" })
     }
   } | sort-by size -r
 }
@@ -202,7 +224,7 @@ def "killp" [name: string] {
     print $"Found processes: ($pids)"
     let confirm = (input $"Kill these processes? (y/N): ")
     if ($confirm | str downcase) == "y" {
-      $pids | each { |pid| kill $pid }
+      $pids | each { |pid| ^kill $pid }
       print "Processes killed"
     } else {
       print "Aborted"
@@ -214,22 +236,22 @@ def "killp" [name: string] {
 def "netinfo" [] {
   print "Network Information:"
   print "=================="
-  print $"Internal IP: (hostname -I | str trim)"
+  print $"Internal IP: (^hostname -I | str trim)"
   print $"External IP: (http get ifconfig.me)"
   print ""
   print "Active Network Interfaces:"
-  ip addr show | lines | where $it =~ "inet " | each { |line| print $line }
+  ^ip addr show | lines | where $it =~ "inet " | each { |line| print $line }
 }
 
 # System information
 def "sysinfo-detailed" [] {
   print "System Information:"
   print "=================="
-  print $"Hostname: (hostname)"
-  print $"OS: (uname -o)"
-  print $"Kernel: (uname -r)"
-  print $"Architecture: (uname -m)"
-  print $"Uptime: (uptime -p)"
+  print $"Hostname: (^hostname)"
+  print $"OS: (^uname -o)"
+  print $"Kernel: (^uname -r)"
+  print $"Architecture: (^uname -m)"
+  print $"Uptime: (^uptime -p)"
   print $"Shell: ($env.SHELL? | default 'nushell')"
   print $"Terminal: ($env.TERM? | default 'unknown')"
   
@@ -241,18 +263,18 @@ def "sysinfo-detailed" [] {
   print ""
   print "Hardware Information:"
   print "==================="
-  print $"Memory: (free -h | lines | get 1 | split row ' ' | where $it != '' | get 2)/((free -h | lines | get 1 | split row ' ' | where $it != '' | get 1))"
-  print $"Disk Usage: (df -h / | lines | get 1 | split row ' ' | where $it != '' | get 2)/((df -h / | lines | get 1 | split row ' ' | where $it != '' | get 1)) (((df -h / | lines | get 1 | split row ' ' | where $it != '' | get 4)))"
+  print $"Memory: (^free -h | lines | get 1 | split row ' ' | where $it != '' | get 2)/((^free -h | lines | get 1 | split row ' ' | where $it != '' | get 1))"
+  print $"Disk Usage: (^df -h / | lines | get 1 | split row ' ' | where $it != '' | get 2)/((^df -h / | lines | get 1 | split row ' ' | where $it != '' | get 1)) (((^df -h / | lines | get 1 | split row ' ' | where $it != '' | get 4)))"
 }
 
 # Start HTTP server  
 def "serve" [port = 8000] {
   if (which python3 | is-not-empty) {
     print $"Starting HTTP server on port ($port)..."
-    python3 -m http.server $port
+    ^python3 -m http.server $port
   } else if (which python | is-not-empty) {
     print $"Starting HTTP server on port ($port)..."
-    python -m SimpleHTTPServer $port
+    ^python -m SimpleHTTPServer $port
   } else {
     print "Python not found. Cannot start HTTP server."
   }

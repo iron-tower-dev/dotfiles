@@ -210,9 +210,11 @@ function extract
     end
 end
 
-# Load Starship prompt if available
-if command -v starship >/dev/null 2>&1
-    starship init fish | source
+# Load Oh My Posh prompt for unified shell experience
+# Note: This is loaded early, but transient prompt setup happens after plugins
+if command -v oh-my-posh >/dev/null 2>&1
+    oh-my-posh init fish --config ~/.config/catppuccin-macchiato.omp.toml | source
+    enable_poshtooltips
 end
 
 # Load direnv if available
@@ -235,6 +237,40 @@ if status is-interactive
             source $file
         end
     end
+    
+    # Create wrapper function to handle both Oh My Posh transient prompt and abbr_tips
+    if command -v oh-my-posh >/dev/null 2>&1; and set -q _omp_transient_prompt
+        function __omp_abbr_tips_enter_handler
+            # Handle Oh My Posh transient prompt first
+            if commandline --paging-mode
+                commandline --function execute
+                return
+            end
+            
+            if commandline --is-valid || test -z (commandline --current-buffer | string trim -l | string collect)
+                set _omp_new_prompt 1
+                set _omp_tooltip_command ''
+                
+                if test $_omp_transient_prompt = 1
+                    set _omp_transient 1
+                    commandline --function repaint
+                end
+            end
+            
+            # Then handle abbr_tips functionality if function exists
+            if functions -q __abbr_tips_bind_newline
+                __abbr_tips_bind_newline
+            else
+                commandline --function execute
+            end
+        end
+        
+        # Rebind enter keys to our wrapper function  
+        bind \r __omp_abbr_tips_enter_handler
+        bind \n __omp_abbr_tips_enter_handler
+        bind -M insert \r __omp_abbr_tips_enter_handler
+        bind -M insert \n __omp_abbr_tips_enter_handler
+    end
 else
     # Load only safe config files that don't exit in non-interactive mode
     for file in ~/.config/fish/conf.d/{catppuccin_theme,abbr_tips}.fish
@@ -254,3 +290,23 @@ if not pgrep -x ssh-agent > /dev/null
     eval (ssh-agent -c)
     ssh-add /home/derrick/.ssh/id_ed25519
 end
+
+# Zellij integration
+if command -v zellij >/dev/null 2>&1
+    # Alias for easy Zellij session management
+    alias zj='zellij'
+    alias zja='zellij attach'           # Attach to existing session
+    alias zjl='zellij list-sessions'    # List sessions
+    alias zjk='zellij kill-session'     # Kill session
+    alias zjd='zellij --layout dev'     # Start with dev layout
+    
+    # Auto-start Zellij if not already in a session and in interactive mode
+    if status is-interactive; and not set -q ZELLIJ
+        # Check if we should auto-start Zellij (skip for certain cases)
+        if not set -q SKIP_ZELLIJ; and not set -q TERM_PROGRAM; and not set -q VSCODE_INJECTION
+            # Start Zellij with the default layout
+            exec zellij
+        end
+    end
+end
+

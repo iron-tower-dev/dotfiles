@@ -73,9 +73,9 @@ alias ...='cd ../..'
 alias zshconfig='$EDITOR ~/.zshrc'
 alias hyprconfig='$EDITOR ~/.config/hypr/hyprland.conf'
 
-# Initialize starship if available
-if command -v starship &> /dev/null; then
-    eval "$(starship init zsh)"
+# Initialize Oh My Posh if available
+if command -v oh-my-posh &> /dev/null; then
+    eval "$(oh-my-posh init zsh --config ~/.config/catppuccin-macchiato.omp.toml)"
 fi
 
 # Initialize direnv if available
@@ -88,7 +88,22 @@ if command -v zoxide &> /dev/null; then
     eval "$(zoxide init zsh)"
 fi
 
-# Load Angular CLI autocompletion if available
-if command -v ng &> /dev/null; then
-    source <(ng completion script)
-fi
+# Load Angular CLI autocompletion if available (with robust error handling)
+# Note: Load this after all PATH modifications are complete
+load_ng_completion() {
+    if command -v ng &> /dev/null 2>&1; then
+        local ng_completion
+        ng_completion=$(ng completion script 2>/dev/null)
+        if [[ $? -eq 0 && -n "$ng_completion" ]]; then
+            eval "$ng_completion" 2>/dev/null || true
+        fi
+    fi
+}
+
+# Defer Angular CLI completion loading until after shell is fully initialized
+autoload -U add-zsh-hook
+add-zsh-hook precmd load_ng_completion_once
+load_ng_completion_once() {
+    load_ng_completion
+    add-zsh-hook -d precmd load_ng_completion_once
+}

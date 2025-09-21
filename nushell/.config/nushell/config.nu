@@ -135,11 +135,7 @@ $env.config = {
     }
   }
 
-  # File completions
-  filesize: {
-    metric: true
-    format: "auto"
-  }
+  # File completions (filesize options moved to other config sections)
 
   # Cursor configuration
   cursor_shape: {
@@ -148,10 +144,9 @@ $env.config = {
     vi_normal: underscore
   }
 
-  # Color configuration
-  color_config: $catppuccin_macchiato
-  use_grid_icons: true
-  footer_mode: "25"
+# Color configuration
+  color_config: (catppuccin_macchiato)
+  footer_mode: 25
   float_precision: 2
   
   # Buffer editor
@@ -167,7 +162,15 @@ $env.config = {
   edit_mode: emacs
   
   # Shell integration
-  shell_integration: true
+  shell_integration: {
+    osc2: true
+    osc7: true
+    osc8: true
+    osc9_9: false
+    osc133: true
+    osc633: true
+    reset_application_mode: true
+  }
   
   # Render right prompt on last line
   render_right_prompt_on_last_line: false
@@ -581,13 +584,7 @@ $env.config = {
       mode: [emacs, vi_insert]
       event: { edit: paste }
     }
-    {
-      name: transpose_words
-      modifier: alt
-      keycode: char_t
-      mode: [emacs, vi_insert]
-      event: { edit: transposewords }
-    }
+    # transpose_words keybinding removed - not available in this Nushell version
     {
       name: uppercase_word
       modifier: alt
@@ -612,37 +609,69 @@ $env.config = {
   ]
 }
 
-# Initialize starship prompt if available
-if (which starship | is-not-empty) {
-  $env.STARSHIP_SHELL = "nu"
-  $env.STARSHIP_SESSION_KEY = (random chars -l 16)
-  $env.PROMPT_MULTILINE_INDICATOR = (^starship prompt --continuation)
+# Initialize Oh My Posh prompt if available
+if (which oh-my-posh | is-not-empty) {
+  # Set Oh My Posh configuration
+  $env.POSH_CONFIG = $"($env.HOME)/.config/catppuccin-macchiato.omp.toml"
   
-  # Initialize starship
-  $env.PROMPT_COMMAND = { || 
-    ^starship prompt $"--cmd-duration=($env.CMD_DURATION_MS)" $"--status=($env.LAST_EXIT_CODE)" --terminal-width (term size).columns
+  # Initialize Oh My Posh for Nushell
+  $env.PROMPT_MULTILINE_INDICATOR = (^oh-my-posh print secondary --config $env.POSH_CONFIG)
+  
+  # Main prompt command
+  $env.PROMPT_COMMAND = { ||
+    ^oh-my-posh print primary --config $env.POSH_CONFIG $"--shell-version=(version | get version)" $"--execution-time=($env.CMD_DURATION_MS)" $"--status=($env.LAST_EXIT_CODE)"
   }
-  $env.PROMPT_COMMAND_RIGHT = { || ^starship prompt --right $"--cmd-duration=($env.CMD_DURATION_MS)" $"--status=($env.LAST_EXIT_CODE)" --terminal-width (term size).columns }
+  
+  # Right prompt command
+  $env.PROMPT_COMMAND_RIGHT = { ||
+    ^oh-my-posh print right --config $env.POSH_CONFIG $"--shell-version=(version | get version)" $"--execution-time=($env.CMD_DURATION_MS)" $"--status=($env.LAST_EXIT_CODE)"
+  }
+  
+  # Transient prompt configuration - simplified prompt after Enter
+  $env.TRANSIENT_PROMPT_COMMAND = { ||
+    ^oh-my-posh print transient --config $env.POSH_CONFIG
+  }
+  $env.TRANSIENT_PROMPT_COMMAND_RIGHT = { || "" }
 }
 
 # Initialize zoxide if available  
 if (which zoxide | is-not-empty) {
-  zoxide init nushell | save --force ~/.config/nushell/zoxide.nu
-  source ~/.config/nushell/zoxide.nu
+  let zoxide_config = $"($env.HOME)/.config/nushell/zoxide.nu"
+  if not ($zoxide_config | path exists) {
+    ^zoxide init nushell | save --force $zoxide_config
+  }
 }
 
 # Initialize direnv if available
 if (which direnv | is-not-empty) {
-  direnv hook nushell | save --force ~/.config/nushell/direnv.nu  
-  source ~/.config/nushell/direnv.nu
+  let direnv_config = $"($env.HOME)/.config/nushell/direnv.nu"
+  if not ($direnv_config | path exists) {
+    ^direnv hook nushell | save --force $direnv_config
+  }
 }
 
 # Initialize mise if available
 if (which mise | is-not-empty) {
-  mise activate nu | save --force ~/.config/nushell/mise.nu
-  source ~/.config/nushell/mise.nu
+  let mise_config = $"($env.HOME)/.config/nushell/mise.nu"
+  if not ($mise_config | path exists) {
+    ^mise activate nu | save --force $mise_config
+  }
 }
 
 # Welcome message
 print $"(ansi green)Welcome to (ansi blue)Nushell(ansi reset) with (ansi magenta)Catppuccin Macchiato(ansi reset) theme!"
 print $"Type (ansi yellow)'help'(ansi reset) to get started or (ansi cyan)'exit'(ansi reset) to return to your previous shell."
+
+# Check if development tools need initialization
+let tools_to_init = (
+  []
+  | (if (which zoxide | is-not-empty) and not ("~/.config/nushell/zoxide.nu" | path expand | path exists) { $in | append "zoxide" } else { $in })
+  | (if (which direnv | is-not-empty) and not ("~/.config/nushell/direnv.nu" | path expand | path exists) { $in | append "direnv" } else { $in })
+  | (if (which mise | is-not-empty) and not ("~/.config/nushell/mise.nu" | path expand | path exists) { $in | append "mise" } else { $in })
+)
+
+if ($tools_to_init | length) > 0 {
+  print ""
+  print $"(ansi yellow)Development tools available for setup: ($tools_to_init | str join ', ')(ansi reset)"
+  print $"(ansi cyan)Run 'source ~/.config/nushell/init.nu' to initialize them.(ansi reset)"
+}

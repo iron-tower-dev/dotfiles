@@ -15,8 +15,8 @@ mkdir ~/.local/share
 # Default PATH setup (additional paths added in config.nu)
 $env.PATH = ($env.PATH | default [])
 
-# Set default umask
-umask 022
+# Note: umask is not available in Nushell
+# File permissions are handled differently in Nushell
 
 # History configuration
 $env.HISTFILE = $"($env.HOME)/.config/nushell/history.txt"

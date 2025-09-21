@@ -104,6 +104,13 @@ configure_system() {
         log_warning "Fish setup script not found, skipping..."
     fi
     
+    # Setup Zsh shell
+    if [[ -f "$SETUP_DIR/system/setup-zsh.sh" ]]; then
+        bash "$SETUP_DIR/system/setup-zsh.sh"
+    else
+        log_warning "Zsh setup script not found, skipping..."
+    fi
+    
     # Setup Mise
     if [[ -f "$SETUP_DIR/system/setup-mise.sh" ]]; then
         bash "$SETUP_DIR/system/setup-mise.sh"
@@ -145,7 +152,6 @@ deploy_dotfiles() {
         "rofi"
         "fish"
         "nushell"
-        "starship"
         "mise"
         "zsh"
         "git"
@@ -214,10 +220,11 @@ interactive_menu() {
     echo "5. Configure system only"
     echo "6. Setup git only"
     echo "7. Setup SDDM only"
-    echo "8. Exit"
+    echo "8. Setup Zsh shell only"
+    echo "9. Exit"
     echo
     
-    read -p "Choose an option (1-8): " choice
+    read -p "Choose an option (1-9): " choice
     
     case $choice in
         1)
@@ -256,6 +263,13 @@ interactive_menu() {
             fi
             ;;
         8)
+            if [[ -f "$SETUP_DIR/system/setup-zsh.sh" ]]; then
+                bash "$SETUP_DIR/system/setup-zsh.sh"
+            else
+                log_error "Zsh setup script not found"
+            fi
+            ;;
+        9)
             log_info "Exiting..."
             exit 0
             ;;
@@ -335,6 +349,13 @@ main() {
                     log_error "SDDM setup script not found"
                 fi
                 ;;
+            --zsh)
+                if [[ -f "$SETUP_DIR/system/setup-zsh.sh" ]]; then
+                    bash "$SETUP_DIR/system/setup-zsh.sh"
+                else
+                    log_error "Zsh setup script not found"
+                fi
+                ;;
             --help)
                 echo "Usage: $0 [option]"
                 echo "Options:"
@@ -345,6 +366,7 @@ main() {
                 echo "  --system    : Configure system only"
                 echo "  --git       : Setup git only"
                 echo "  --sddm      : Setup SDDM display manager only"
+                echo "  --zsh       : Setup Zsh shell only"
                 echo "  --help      : Show this help"
                 exit 0
                 ;;

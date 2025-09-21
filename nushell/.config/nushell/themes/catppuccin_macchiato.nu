@@ -84,10 +84,5 @@ export def catppuccin_macchiato [] {
   }
 }
 
-# Export the theme as a global variable
-export def-env setup_catppuccin_macchiato [] {
-  $env.catppuccin_macchiato = (catppuccin_macchiato)
-}
-
-# Set up the theme
-setup_catppuccin_macchiato
+# Set up the theme variable for use in config.nu
+let catppuccin_macchiato_theme = (catppuccin_macchiato)

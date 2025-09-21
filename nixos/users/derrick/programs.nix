@@ -63,14 +63,9 @@
       '';
     };
 
-    # Starship prompt
-    starship = {
-      enable = true;
-      catppuccin.enable = true;
-      
-      # Use existing starship configuration from dotfiles if available
-      # Otherwise use default Catppuccin configuration
-    };
+    # Oh My Posh prompt (replaces Starship)
+    # Note: Oh My Posh is not available in nixpkgs as a Home Manager module
+    # It will be installed via the package manager (pacman/AUR) and configured through dotfiles
 
     # Git configuration (extended)
     git = {
@@ -215,10 +210,8 @@
       recursive = true;
     };
 
-    # Starship configuration
-    ".config/starship.toml" = lib.mkIf (builtins.pathExists ../../../starship) {
-      source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/starship/.config/starship.toml";
-    };
+    # Oh My Posh configuration (managed through dotfiles/stow)
+    # Configuration file: ~/.config/catppuccin-macchiato.omp.toml
 
     # Neovim configuration
     ".config/nvim" = lib.mkIf (builtins.pathExists ../../../neovim) {
