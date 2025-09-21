@@ -96,7 +96,7 @@ bash scripts/validate.sh
 ### Shell Testing
 ```bash
 cd ~/dotfiles
-./test-omp-all-shells.sh
+# Test scripts have been cleaned up
 ```
 
 ## 📝 Configuration Files
