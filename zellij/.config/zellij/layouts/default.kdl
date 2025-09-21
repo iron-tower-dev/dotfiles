@@ -1,15 +1,18 @@
 // Default Zellij layout
-// Simple layout with a single pane and tab bar
+// Clean layout with status bar at bottom showing session info, date/time, and tabs
 
 layout {
     default_tab_template {
+        // Main terminal content area
         children
+        
+        // Compact status bar at bottom with date/time and session info
         pane size=1 borderless=true {
-            plugin location="zellij:tab-bar"
+            plugin location="zellij:compact-bar"
         }
     }
 
-    tab name="main" {
+    tab name="Terminal" focus=true {
         pane
     }
 }

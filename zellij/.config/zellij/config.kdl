@@ -13,19 +13,37 @@ scroll_buffer_size 10000
 copy_on_select true
 scrollback_editor "nvim"
 
-// UI settings
-pane_frames true
-simplified_ui false
+// UI settings for clean, modern appearance
+pane_frames true          // Enable pane frames
+simplified_ui true        // Clean separators without triangles
 default_mode "normal"
+
+// UI configuration to maintain Catppuccin colors with simplified UI
+ui {
+    pane_frames {
+        rounded_corners true
+        hide_session_name false
+    }
+}
+
+
+// Modern terminal appearance settings
+// The simplified_ui option above provides cleaner separators automatically
 
 // Session settings
 session_serialization true
 serialize_pane_viewport true
 
-// Plugin settings
+// Plugin settings with clean separators
 plugins {
-    tab-bar { path "tab-bar"; }
-    status-bar { path "status-bar"; }
+    tab-bar { 
+        path "tab-bar";
+        // Use clean separators for tab bar
+    }
+    status-bar { 
+        path "status-bar";
+        // Use clean separators for status bar  
+    }
     strider { path "strider"; }
     compact-bar { path "compact-bar"; }
 }

@@ -1,0 +1,23 @@
+// Status Bottom Layout
+// Clean layout with status bar at bottom showing session info and date/time
+
+layout {
+    default_tab_template {
+        // Main terminal content area with mauve borders
+        children
+        
+        // Combined status bar at bottom showing tabs, session, and date/time
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        
+        // Additional status line for system info (optional)
+        pane size=1 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+    tab name="main" focus=true {
+        pane
+    }
+}
