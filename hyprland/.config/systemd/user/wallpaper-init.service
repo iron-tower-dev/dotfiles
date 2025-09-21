@@ -1,0 +1,14 @@
+[Unit]
+Description=Initialize wallpaper system with swww
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/derrick/dotfiles/waybar/.config/waybar/scripts/wallpaper.sh init
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=WAYLAND_DISPLAY=wayland-1
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

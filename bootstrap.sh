@@ -117,6 +117,13 @@ configure_system() {
     else
         log_warning "Git setup script not found, skipping..."
     fi
+    
+    # Setup SDDM
+    if [[ -f "$SETUP_DIR/system/setup-sddm.sh" ]]; then
+        bash "$SETUP_DIR/system/setup-sddm.sh"
+    else
+        log_warning "SDDM setup script not found, skipping..."
+    fi
 }
 
 # Deploy dotfiles with stow
@@ -144,6 +151,7 @@ deploy_dotfiles() {
         "git"
         "neovim"
         "themes"
+        "sddm"
     )
     
     cd "$SCRIPT_DIR"
@@ -205,10 +213,11 @@ interactive_menu() {
     echo "4. Setup themes only"
     echo "5. Configure system only"
     echo "6. Setup git only"
-    echo "7. Exit"
+    echo "7. Setup SDDM only"
+    echo "8. Exit"
     echo
     
-    read -p "Choose an option (1-7): " choice
+    read -p "Choose an option (1-8): " choice
     
     case $choice in
         1)
@@ -240,6 +249,13 @@ interactive_menu() {
             fi
             ;;
         7)
+            if [[ -f "$SETUP_DIR/system/setup-sddm.sh" ]]; then
+                bash "$SETUP_DIR/system/setup-sddm.sh"
+            else
+                log_error "SDDM setup script not found"
+            fi
+            ;;
+        8)
             log_info "Exiting..."
             exit 0
             ;;
@@ -312,6 +328,13 @@ main() {
                     log_error "Git setup script not found"
                 fi
                 ;;
+            --sddm)
+                if [[ -f "$SETUP_DIR/system/setup-sddm.sh" ]]; then
+                    bash "$SETUP_DIR/system/setup-sddm.sh"
+                else
+                    log_error "SDDM setup script not found"
+                fi
+                ;;
             --help)
                 echo "Usage: $0 [option]"
                 echo "Options:"
@@ -321,6 +344,7 @@ main() {
                 echo "  --themes    : Setup themes only"
                 echo "  --system    : Configure system only"
                 echo "  --git       : Setup git only"
+                echo "  --sddm      : Setup SDDM display manager only"
                 echo "  --help      : Show this help"
                 exit 0
                 ;;

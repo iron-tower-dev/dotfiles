@@ -330,6 +330,27 @@
   border: 1px solid @overlay1;
 }
 
+/* Wallpaper module */
+#custom-wallpaper {
+  color: @peach;
+  background: @surface0;
+  border: 1px solid @peach;
+  font-size: 16px;
+}
+
+#custom-wallpaper:hover {
+  color: @base;
+  background: @peach;
+  border: 1px solid @peach;
+  box-shadow: 0 4px 16px rgba(250, 179, 135, 0.5);
+}
+
+#custom-wallpaper.wallpaper-inactive {
+  color: @overlay1;
+  background: @surface0;
+  border: 1px solid @overlay1;
+}
+
 /* Power module */
 #custom-power {
   color: @red;

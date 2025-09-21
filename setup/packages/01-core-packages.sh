@@ -45,6 +45,8 @@ CORE_PACKAGES=(
     "wl-clipboard"         # Wayland clipboard
     "xdg-desktop-portal-hyprland"  # Desktop portal for Hyprland
     "polkit-gnome"         # Authentication agent
+    "dunst"                # Notification daemon
+    "libnotify"            # Notification library
     "fish"                  # Modern shell
     "nushell"              # Structured data shell
     "starship"             # Modern prompt

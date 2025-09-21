@@ -8,7 +8,7 @@
     "spacing": 5,
     "modules-left": ["hyprland/workspaces", "hyprland/window", "custom/weather"],
     "modules-center": ["custom/media"],
-    "modules-right": ["idle_inhibitor", "custom/network", "custom/cpu", "custom/memory", "custom/disk", "pulseaudio", "backlight", "battery", "clock", "tray", "custom/power"],
+    "modules-right": ["idle_inhibitor", "custom/network", "custom/cpu", "custom/memory", "custom/disk", "pulseaudio", "backlight", "battery", "custom/wallpaper", "clock", "tray", "custom/power"],
     "hyprland/workspaces": {
         "format": "{icon}",
         "format-icons": {
@@ -163,6 +163,16 @@
         "on-click": "pavucontrol",
         "on-click-right": "pactl set-sink-mute @DEFAULT_SINK@ toggle",
         "tooltip-format": "Volume: {volume}%\nDevice: {desc}"
+    },
+    "custom/wallpaper": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/wallpaper.sh status",
+        "interval": 30,
+        "on-click": "~/.config/waybar/scripts/wallpaper.sh set",
+        "on-click-right": "waypaper",
+        "tooltip": true,
+        "escape": true
     },
     "custom/power": {
         "format": "󰐥",

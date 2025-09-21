@@ -20,10 +20,11 @@ This is a complete Arch Linux desktop environment setup featuring Hyprland (Wayl
 
 ### Key Components
 - **Desktop**: Hyprland (Wayland compositor) + Waybar (status bar) + Rofi (launcher)
+- **Display Manager**: SDDM with Catppuccin Macchiato theme and HiDPI support
 - **Terminal**: Alacritty with Fish shell (default) + Nushell + Starship prompt
 - **Editor**: Neovim with lazy.nvim, LSP, fuzzy finding, and Catppuccin theming
 - **Development**: Git with 50+ aliases, SSH key management, GitHub CLI integration
-- **Theming**: Catppuccin Macchiato across all applications (GTK, Qt, terminal, etc.)
+- **Theming**: Catppuccin Macchiato across all applications (GTK, Qt, terminal, SDDM)
 
 ## Common Development Commands
 
@@ -138,6 +139,31 @@ git pf                       # Push force with lease (safer)
 git ss "description"         # Save stash with message
 git sl                       # List stashes
 git sp                       # Pop stash
+```
+
+### SDDM Display Manager Configuration
+```bash
+# Setup SDDM with Catppuccin Macchiato theme (automated)
+./setup/system/setup-sddm.sh              # Install and configure SDDM
+
+# Theme variant selection
+./setup/system/sddm-theme-selector.sh     # Interactive theme selector
+./setup/system/sddm-theme-selector.sh --list           # List available variants
+./setup/system/sddm-theme-selector.sh --set blue       # Set specific variant
+./setup/system/sddm-theme-selector.sh --current        # Show current theme
+
+# Manual deployment
+stow -t ~ sddm                    # Deploy SDDM config
+sudo cp sddm/sddm.conf /etc/sddm.conf     # Apply system config
+
+# Service management
+sudo systemctl enable sddm.service        # Enable SDDM service
+sudo systemctl status sddm.service         # Check SDDM status
+sudo systemctl restart display-manager     # Restart display manager
+
+# Theme verification
+ls /usr/share/sddm/themes/        # List installed themes
+sudo journalctl -u sddm.service   # Check SDDM logs
 ```
 
 ### SSH and GitHub CLI Configuration
@@ -270,6 +296,7 @@ dotfiles/
 ├── mise/                    # Programming language version manager
 ├── neovim/                  # Neovim configuration
 │   └── .config/nvim/        # Complete Neovim setup with lazy.nvim
+├── sddm/                    # SDDM display manager configuration
 └── themes/                  # GTK/Qt theme configurations
 ```
 

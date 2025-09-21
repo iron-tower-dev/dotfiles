@@ -80,6 +80,8 @@ AUR_PACKAGES=(
     # System tools
     "hyprpicker"                   # Color picker for Hyprland
     "grimblast-git"               # Enhanced screenshot tool
+    "swww"                        # Wayland wallpaper daemon
+    "waypaper"                    # Wallpaper manager for Wayland
 )
 
 # Optional packages (user can choose)
