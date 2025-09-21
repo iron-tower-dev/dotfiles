@@ -30,7 +30,12 @@ if python3 /home/derrick/dotfiles/scripts/keybind-reference.py --help >/dev/null
     echo "  • Click the keyboard icon (󰌌) in Waybar"
     echo "  • Press Escape to close the panel"
     echo ""
-    echo "📍 The panel will appear floating on the right side of your screen"
+    echo "📋 Available Keybinding References:"
+    echo "  • Hyprland - Window manager shortcuts"
+    echo "  • Zellij - Terminal multiplexer shortcuts"
+    echo "  • Neovim LSP - Language server shortcuts for development"
+    echo ""
+    echo "📍 The panel will appear floating with tabs for each category"
 else
     echo "❌ Application test failed. Check dependencies and try again."
     exit 1

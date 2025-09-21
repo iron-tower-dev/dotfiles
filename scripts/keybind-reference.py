@@ -13,7 +13,7 @@ import sys
 import json
 import re
 from pathlib import Path
-from gi.repository import Gtk, Adw, GLib, Gio
+from gi.repository import Gtk, Adw, GLib, Gio, Pango
 
 # Catppuccin Macchiato color palette
 CATPPUCCIN_MACCHIATO = {
@@ -53,10 +53,12 @@ class KeybindingReference:
         # Keybinding data
         self.hyprland_keybinds = []
         self.zellij_keybinds = []
+        self.neovim_lsp_keybinds = []
         
         # Load keybindings
         self.load_hyprland_keybinds()
         self.load_zellij_keybinds()
+        self.load_neovim_lsp_keybinds()
     
     def load_hyprland_keybinds(self):
         """Extract keybindings from Hyprland configuration"""
@@ -128,6 +130,146 @@ class KeybindingReference:
         except Exception as e:
             print(f"Error loading Zellij keybinds: {e}")
     
+    def load_neovim_lsp_keybinds(self):
+        """Load Neovim LSP keybindings from configuration"""
+        try:
+            # Note: <leader> is typically mapped to Space in modern Neovim configs
+            self.neovim_lsp_keybinds = [
+                # Navigation keybinds
+                {'key': 'gd', 'action': 'Go to Definition', 'category': 'Navigation'},
+                {'key': 'gr', 'action': 'Go to References', 'category': 'Navigation'},
+                {'key': 'gI', 'action': 'Go to Implementation', 'category': 'Navigation'},
+                {'key': 'gy', 'action': 'Go to Type Definition', 'category': 'Navigation'},
+                {'key': 'gD', 'action': 'Go to Declaration', 'category': 'Navigation'},
+                
+                # Documentation
+                {'key': 'K', 'action': 'Hover Documentation', 'category': 'Documentation'},
+                {'key': 'gK', 'action': 'Signature Help', 'category': 'Documentation'},
+                
+                # Code actions
+                {'key': '<leader>ca', 'action': 'Code Action', 'category': 'Code Actions'},
+                {'key': '<leader>rn', 'action': 'Rename Symbol', 'category': 'Code Actions'},
+                {'key': '<leader>f', 'action': 'Format Document', 'category': 'Code Actions'},
+                
+                # Diagnostics
+                {'key': '<leader>d', 'action': 'Show Diagnostic', 'category': 'Diagnostics'},
+                {'key': '[d', 'action': 'Previous Diagnostic', 'category': 'Diagnostics'},
+                {'key': ']d', 'action': 'Next Diagnostic', 'category': 'Diagnostics'},
+                {'key': '<leader>dl', 'action': 'Diagnostic Location List', 'category': 'Diagnostics'},
+                {'key': '<leader>dw', 'action': 'Diagnostic Workspace', 'category': 'Diagnostics'},
+                {'key': '<leader>dd', 'action': 'Toggle Diagnostics', 'category': 'Diagnostics'},
+                
+                # Workspace management
+                {'key': '<leader>wa', 'action': 'Add Workspace Folder', 'category': 'Workspace'},
+                {'key': '<leader>wr', 'action': 'Remove Workspace Folder', 'category': 'Workspace'},
+                {'key': '<leader>wl', 'action': 'List Workspace Folders', 'category': 'Workspace'},
+                
+                # Advanced features (FZF)
+                {'key': '<leader>lr', 'action': 'Find References (FZF)', 'category': 'Advanced'},
+                {'key': '<leader>ld', 'action': 'Find Definitions (FZF)', 'category': 'Advanced'},
+                {'key': '<leader>li', 'action': 'Find Implementations (FZF)', 'category': 'Advanced'},
+                {'key': '<leader>lt', 'action': 'Find Type Definitions (FZF)', 'category': 'Advanced'},
+                {'key': '<leader>ls', 'action': 'Document Symbols (FZF)', 'category': 'Advanced'},
+                {'key': '<leader>lS', 'action': 'Workspace Symbols (FZF)', 'category': 'Advanced'},
+                {'key': '<leader>lc', 'action': 'Code Actions (FZF)', 'category': 'Advanced'},
+                {'key': '<leader>lD', 'action': 'Workspace Diagnostics (FZF)', 'category': 'Advanced'},
+                
+                # Toggle features
+                {'key': '<leader>th', 'action': 'Toggle Inlay Hints', 'category': 'Toggle'},
+                {'key': '<leader>thl', 'action': 'Toggle Document Highlight', 'category': 'Toggle'},
+                
+                # C#-specific keybinds (OmniSharp)
+                {'key': '<leader>cb', 'action': 'Build Project', 'category': 'C# Development'},
+                {'key': '<leader>cr', 'action': 'Run Project', 'category': 'C# Development'},
+                {'key': '<leader>ct', 'action': 'Test Project', 'category': 'C# Development'},
+                {'key': '<leader>cT', 'action': 'Test with Coverage', 'category': 'C# Development'},
+                {'key': '<leader>cR', 'action': 'Restore Packages', 'category': 'C# Development'},
+                {'key': '<leader>cC', 'action': 'Clean Project', 'category': 'C# Development'},
+                {'key': '<leader>cp', 'action': 'Add Package', 'category': 'C# Development'},
+                {'key': '<leader>cP', 'action': 'Remove Package', 'category': 'C# Development'},
+                {'key': '<leader>cn', 'action': 'Create New Class', 'category': 'C# Development'},
+                {'key': '<leader>cf', 'action': 'Format Document', 'category': 'C# Development'},
+                {'key': '<leader>cA', 'action': 'Go to Alternate File (Test/Implementation)', 'category': 'C# Development'},
+                {'key': '<leader>ci', 'action': 'Show Project Info', 'category': 'C# Development'},
+                {'key': '<leader>cD', 'action': 'Decompile', 'category': 'C# Development'},
+                {'key': '<leader>cu', 'action': 'Organize Imports', 'category': 'C# Development'},
+                
+                # TypeScript/JavaScript-specific keybinds (ts_ls)
+                {'key': '<leader>to', 'action': 'Organize Imports', 'category': 'TypeScript/JavaScript'},
+                {'key': '<leader>tu', 'action': 'Remove Unused Imports', 'category': 'TypeScript/JavaScript'},
+                {'key': '<leader>ta', 'action': 'Add Missing Imports', 'category': 'TypeScript/JavaScript'},
+                {'key': '<leader>tf', 'action': 'Fix All Issues', 'category': 'TypeScript/JavaScript'},
+                {'key': 'gS', 'action': 'Go to Source Definition', 'category': 'TypeScript/JavaScript'},
+                {'key': '<leader>tr', 'action': 'Restart TypeScript Server', 'category': 'TypeScript/JavaScript'},
+                
+                # Angular-specific keybinds (angularls)
+                {'key': '<leader>ac', 'action': 'Go to Component', 'category': 'Angular Development'},
+                {'key': '<leader>at', 'action': 'Go to Template', 'category': 'Angular Development'},
+                {'key': '<leader>as', 'action': 'Go to Style', 'category': 'Angular Development'},
+                {'key': '<leader>ae', 'action': 'Extract Component', 'category': 'Angular Development'},
+                {'key': '<leader>av', 'action': 'Show Angular Version', 'category': 'Angular Development'},
+                {'key': '<leader>ar', 'action': 'Restart Angular Server', 'category': 'Angular Development'},
+                
+                # Go-specific keybinds (gopls)
+                {'key': '<leader>gi', 'action': 'Organize Imports', 'category': 'Go Development'},
+                {'key': '<leader>gt', 'action': 'Go Mod Tidy', 'category': 'Go Development'},
+                {'key': '<leader>gT', 'action': 'Generate Tests', 'category': 'Go Development'},
+                {'key': '<leader>gr', 'action': 'Run Tests', 'category': 'Go Development'},
+                {'key': '<leader>gR', 'action': 'Run Test Function', 'category': 'Go Development'},
+                {'key': '<leader>gf', 'action': 'Fill Struct', 'category': 'Go Development'},
+                {'key': '<leader>ga', 'action': 'Add Struct Tags', 'category': 'Go Development'},
+                {'key': '<leader>gA', 'action': 'Go to Alternate File (Test/Implementation)', 'category': 'Go Development'},
+                {'key': '<leader>gb', 'action': 'Run Benchmarks', 'category': 'Go Development'},
+                {'key': '<leader>gv', 'action': 'Vulnerability Check', 'category': 'Go Development'},
+                {'key': '<leader>gc', 'action': 'Regenerate CGO', 'category': 'Go Development'},
+                
+                # Elixir-specific keybinds (elixirls)
+                {'key': '<leader>et', 'action': 'Run Tests', 'category': 'Elixir Development'},
+                {'key': '<leader>eT', 'action': 'Run Test Under Cursor', 'category': 'Elixir Development'},
+                {'key': '<leader>ep', 'action': 'Convert to Pipe', 'category': 'Elixir Development'},
+                {'key': '<leader>eP', 'action': 'Convert from Pipe', 'category': 'Elixir Development'},
+                {'key': '<leader>em', 'action': 'Expand Macro', 'category': 'Elixir Development'},
+                {'key': '<leader>ef', 'action': 'Format with Mix', 'category': 'Elixir Development'},
+                {'key': '<leader>er', 'action': 'Restart ElixirLS', 'category': 'Elixir Development'},
+                {'key': '<leader>ed', 'action': 'Show Documentation', 'category': 'Elixir Development'},
+                {'key': '<leader>ei', 'action': 'Open IEx', 'category': 'Elixir Development'},
+                
+                # Kotlin-specific keybinds (kotlin_language_server)
+                {'key': '<leader>kb', 'action': 'Build Project', 'category': 'Kotlin Development'},
+                {'key': '<leader>kr', 'action': 'Run Project', 'category': 'Kotlin Development'},
+                {'key': '<leader>kt', 'action': 'Run Tests', 'category': 'Kotlin Development'},
+                {'key': '<leader>kT', 'action': 'Run Current Test Class', 'category': 'Kotlin Development'},
+                {'key': '<leader>kj', 'action': 'Build JVM Target', 'category': 'Kotlin Multiplatform'},
+                {'key': '<leader>kn', 'action': 'Build Native Target', 'category': 'Kotlin Multiplatform'},
+                {'key': '<leader>ks', 'action': 'Build JS Target', 'category': 'Kotlin Multiplatform'},
+                {'key': '<leader>ka', 'action': 'Build Android Target', 'category': 'Kotlin Multiplatform'},
+                {'key': '<leader>kg', 'action': 'Generate Data Class', 'category': 'Kotlin Development'},
+                {'key': '<leader>kc', 'action': 'Generate Constructor', 'category': 'Kotlin Development'},
+                {'key': '<leader>ke', 'action': 'Generate Equals/HashCode', 'category': 'Kotlin Development'},
+                {'key': '<leader>ki', 'action': 'Organize Imports', 'category': 'Kotlin Development'},
+                {'key': '<leader>kf', 'action': 'Extract Function', 'category': 'Kotlin Development'},
+                {'key': '<leader>kv', 'action': 'Extract Variable', 'category': 'Kotlin Development'},
+                {'key': '<leader>kd', 'action': 'Generate KDoc', 'category': 'Kotlin Development'},
+                
+                # Clojure-specific keybinds (clojure_lsp)
+                {'key': '<leader>rj', 'action': 'Start Lein REPL', 'category': 'Clojure REPL'},
+                {'key': '<leader>rJ', 'action': 'Start Clj REPL', 'category': 'Clojure REPL'},
+                {'key': '<leader>rc', 'action': 'Connect to REPL', 'category': 'Clojure REPL'},
+                {'key': '<leader>re', 'action': 'Evaluate Expression', 'category': 'Clojure REPL'},
+                {'key': '<leader>rb', 'action': 'Evaluate Buffer', 'category': 'Clojure REPL'},
+                {'key': '<leader>cn', 'action': 'Clean Namespace', 'category': 'Clojure Development'},
+                {'key': '<leader>ca', 'action': 'Add Missing Import', 'category': 'Clojure Development'},
+                {'key': '<leader>tt', 'action': 'Run Namespace Tests', 'category': 'Clojure Development'},
+                {'key': '<leader>ta', 'action': 'Run All Tests', 'category': 'Clojure Development'},
+                {'key': '<leader>cd', 'action': 'Show ClojureDocs', 'category': 'Clojure Development'},
+                {'key': '<leader>cf', 'action': 'Extract Function', 'category': 'Clojure Development'},
+                {'key': '<leader>ci', 'action': 'Introduce Let', 'category': 'Clojure Development'},
+                {'key': '<leader>c-', 'action': 'Thread First', 'category': 'Clojure Development'},
+                {'key': '<leader>c=', 'action': 'Thread Last', 'category': 'Clojure Development'},
+            ]
+        except Exception as e:
+            print(f"Error loading Neovim LSP keybinds: {e}")
+    
     def categorize_hyprland_action(self, action):
         """Categorize Hyprland actions for better organization"""
         action_lower = action.lower()
@@ -144,80 +286,90 @@ class KeybindingReference:
     
     def create_css_provider(self):
         """Create CSS styling with Catppuccin Macchiato colors"""
-        css = f"""
-        .keybind-window {{
-            background-color: {CATPPUCCIN_MACCHIATO['base']};
-            border: 2px solid {CATPPUCCIN_MACCHIATO['surface1']};
+        # Build CSS string with proper formatting
+        css = """
+        .keybind-window {
+            background-color: """ + CATPPUCCIN_MACCHIATO['base'] + """;
+            border: 2px solid """ + CATPPUCCIN_MACCHIATO['surface1'] + """;
             border-radius: 12px;
-        }}
+        }
         
-        .title-label {{
-            color: {CATPPUCCIN_MACCHIATO['text']};
+        .title-label {
+            color: """ + CATPPUCCIN_MACCHIATO['text'] + """;
             font-size: 24px;
             font-weight: bold;
             margin: 16px;
-        }}
+        }
         
-        .category-label {{
-            color: {CATPPUCCIN_MACCHIATO['mauve']};
+        .nav-help-label {
+            color: """ + CATPPUCCIN_MACCHIATO['subtext1'] + """;
+            font-size: 12px;
+            font-weight: normal;
+            margin: 0 16px 8px 16px;
+        }
+        
+        .category-label {
+            color: """ + CATPPUCCIN_MACCHIATO['mauve'] + """;
             font-size: 18px;
             font-weight: bold;
             margin: 12px 0 8px 0;
-        }}
+        }
         
-        .keybind-row {{
-            background-color: {CATPPUCCIN_MACCHIATO['surface0']};
+        .keybind-row {
+            background-color: """ + CATPPUCCIN_MACCHIATO['surface0'] + """;
             border-radius: 8px;
             margin: 4px;
             padding: 8px 12px;
-            border: 1px solid {CATPPUCCIN_MACCHIATO['surface1']};
-        }}
+            border: 1px solid """ + CATPPUCCIN_MACCHIATO['surface1'] + """;
+            min-height: 40px;
+        }
         
-        .keybind-row:hover {{
-            background-color: {CATPPUCCIN_MACCHIATO['surface1']};
-            border-color: {CATPPUCCIN_MACCHIATO['mauve']};
-        }}
+        .keybind-row:hover {
+            background-color: """ + CATPPUCCIN_MACCHIATO['surface1'] + """;
+            border-color: """ + CATPPUCCIN_MACCHIATO['mauve'] + """;
+        }
         
-        .key-label {{
-            color: {CATPPUCCIN_MACCHIATO['peach']};
+        .key-label {
+            color: """ + CATPPUCCIN_MACCHIATO['peach'] + """;
             font-family: 'JetBrains Mono', monospace;
             font-weight: bold;
             font-size: 14px;
-        }}
+        }
         
-        .action-label {{
-            color: {CATPPUCCIN_MACCHIATO['text']};
+        .action-label {
+            color: """ + CATPPUCCIN_MACCHIATO['text'] + """;
             font-size: 14px;
-        }}
+        }
         
-        .notebook {{
-            background-color: {CATPPUCCIN_MACCHIATO['base']};
-        }}
+        .notebook {
+            background-color: """ + CATPPUCCIN_MACCHIATO['base'] + """;
+        }
         
-        .notebook tab {{
-            background-color: {CATPPUCCIN_MACCHIATO['surface0']};
-            color: {CATPPUCCIN_MACCHIATO['subtext1']};
+        .notebook tab {
+            background-color: """ + CATPPUCCIN_MACCHIATO['surface0'] + """;
+            color: """ + CATPPUCCIN_MACCHIATO['subtext1'] + """;
             border-radius: 8px 8px 0 0;
             margin-right: 4px;
             padding: 12px 20px;
-        }}
+        }
         
-        .notebook tab:checked {{
-            background-color: {CATPPUCCIN_MACCHIATO['surface1']};
-            color: {CATPPUCCIN_MACCHIATO['text']};
-            border-bottom: 3px solid {CATPPUCCIN_MACCHIATO['mauve']};
-        }}
+        .notebook tab:checked {
+            background-color: """ + CATPPUCCIN_MACCHIATO['surface1'] + """;
+            color: """ + CATPPUCCIN_MACCHIATO['text'] + """;
+            border-bottom: 3px solid """ + CATPPUCCIN_MACCHIATO['mauve'] + """;
+        }
         
-        .scrolled-window {{
+        .scrolled-window {
             background-color: transparent;
-        }}
+            min-width: 600px;
+        }
         """
         
         css_provider = Gtk.CssProvider()
         css_provider.load_from_string(css)
         return css_provider
     
-    def create_keybind_section(self, keybinds):
+    def create_keybind_section(self, keybinds, show_leader_note=False):
         """Create a section showing keybindings grouped by category"""
         # Group keybindings by category
         categories = {}
@@ -230,8 +382,11 @@ class KeybindingReference:
         # Create scrolled window
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_css_classes(['scrolled-window'])
-        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled.set_vexpand(True)
+        scrolled.set_min_content_width(600)
+        scrolled.set_min_content_height(400)
+        scrolled.set_propagate_natural_width(True)
         
         # Main container
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -239,6 +394,17 @@ class KeybindingReference:
         main_box.set_margin_bottom(16)
         main_box.set_margin_start(20)
         main_box.set_margin_end(20)
+        main_box.set_hexpand(True)
+        
+        # Add leader key explanation if requested
+        if show_leader_note:
+            leader_note = Gtk.Label(label="Note: <leader> is mapped to Space in this Neovim configuration")
+            leader_note.set_css_classes(['action-label'])
+            leader_note.set_xalign(0)
+            leader_note.set_wrap(True)
+            leader_note.set_wrap_mode(Pango.WrapMode.WORD)
+            leader_note.set_margin_bottom(16)
+            main_box.append(leader_note)
         
         # Add categories
         for category, category_keybinds in sorted(categories.items()):
@@ -253,17 +419,33 @@ class KeybindingReference:
                 row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
                 row_box.set_css_classes(['keybind-row'])
                 
-                # Key combination
+                # Key combination - fixed width with wrapping
                 key_label = Gtk.Label(label=keybind['key'])
                 key_label.set_css_classes(['key-label'])
-                key_label.set_size_request(200, -1)
+                key_label.set_size_request(180, -1)  # Slightly smaller to leave more room
                 key_label.set_xalign(0)
+                key_label.set_valign(Gtk.Align.START)
+                key_label.set_wrap(True)
+                key_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                key_label.set_max_width_chars(25)
+                key_label.set_ellipsize(Pango.EllipsizeMode.END)
                 
-                # Action description
+                # Action description - expandable with wrapping
                 action_label = Gtk.Label(label=keybind['action'])
                 action_label.set_css_classes(['action-label'])
                 action_label.set_xalign(0)
+                action_label.set_valign(Gtk.Align.START)
                 action_label.set_hexpand(True)
+                action_label.set_wrap(True)
+                action_label.set_wrap_mode(Pango.WrapMode.WORD)
+                action_label.set_max_width_chars(50)
+                action_label.set_ellipsize(Pango.EllipsizeMode.END)
+                action_label.set_justify(Gtk.Justification.LEFT)
+                action_label.set_lines(3)  # Limit to 3 lines maximum
+                
+                # Add tooltips for full text on hover
+                key_label.set_tooltip_text(keybind['key'])
+                action_label.set_tooltip_text(keybind['action'])
                 
                 row_box.append(key_label)
                 row_box.append(action_label)
@@ -278,9 +460,12 @@ class KeybindingReference:
         
         # Create main window
         self.window = Adw.ApplicationWindow(application=app)
-        self.window.set_title("Keybinding Reference")
+        self.window.set_title("Keybinding Reference - Hyprland, Zellij & Neovim LSP")
         self.window.set_css_classes(['keybind-window'])
-        self.window.set_default_size(600, 700)
+        self.window.set_default_size(800, 750)
+        
+        # Make window focusable for keyboard navigation
+        self.window.set_can_focus(True)
         
         # Set window class for Hyprland window rules
         GLib.set_prgname('keybind-reference')
@@ -289,27 +474,52 @@ class KeybindingReference:
         
         # Create header bar
         header = Adw.HeaderBar()
-        header.set_title_widget(Gtk.Label(label="Keybinding Reference"))
-        header.get_title_widget().set_css_classes(['title-label'])
+        
+        # Title with navigation help
+        title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        title_label = Gtk.Label(label="Keybinding Reference")
+        title_label.set_css_classes(['title-label'])
+        
+        nav_help = Gtk.Label(label="Nav: j/k(scroll) • d/u(half-page) • g/G(top/bottom) • H/L(tabs) • 1-3(direct tab) • q/Esc(quit)")
+        nav_help.set_css_classes(['nav-help-label'])
+        nav_help.set_wrap(True)
+        nav_help.set_wrap_mode(Pango.WrapMode.WORD)
+        nav_help.set_max_width_chars(80)
+        
+        title_box.append(title_label)
+        title_box.append(nav_help)
+        
+        header.set_title_widget(title_box)
         
         # Create notebook for tabs
-        notebook = Gtk.Notebook()
-        notebook.set_css_classes(['notebook'])
+        self.notebook = Gtk.Notebook()
+        self.notebook.set_css_classes(['notebook'])
+        
+        # Store scrolled windows for each tab for navigation
+        self.scrolled_windows = []
         
         # Hyprland tab
         hyprland_page = self.create_keybind_section(self.hyprland_keybinds)
         hyprland_label = Gtk.Label(label="Hyprland")
-        notebook.append_page(hyprland_page, hyprland_label)
+        self.notebook.append_page(hyprland_page, hyprland_label)
+        self.scrolled_windows.append(hyprland_page)
         
         # Zellij tab
         zellij_page = self.create_keybind_section(self.zellij_keybinds)
         zellij_label = Gtk.Label(label="Zellij")
-        notebook.append_page(zellij_page, zellij_label)
+        self.notebook.append_page(zellij_page, zellij_label)
+        self.scrolled_windows.append(zellij_page)
+        
+        # Neovim LSP tab
+        neovim_lsp_page = self.create_keybind_section(self.neovim_lsp_keybinds, show_leader_note=True)
+        neovim_lsp_label = Gtk.Label(label="Neovim LSP")
+        self.notebook.append_page(neovim_lsp_page, neovim_lsp_label)
+        self.scrolled_windows.append(neovim_lsp_page)
         
         # Main container
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         main_box.append(header)
-        main_box.append(notebook)
+        main_box.append(self.notebook)
         
         self.window.set_content(main_box)
         
@@ -323,15 +533,118 @@ class KeybindingReference:
         
         self.window.present()
         
-        # Close on Escape key
+        # Setup keyboard navigation
+        self.setup_keyboard_navigation()
+    
+    def setup_keyboard_navigation(self):
+        """Setup vim-style keyboard navigation"""
         controller = Gtk.EventControllerKey()
         controller.connect('key-pressed', self.on_key_pressed)
         self.window.add_controller(controller)
     
     def on_key_pressed(self, controller, keyval, keycode, state):
+        """Handle keyboard navigation with vim-style motions"""
+        # Get the currently active scrolled window
+        current_page = self.notebook.get_current_page()
+        if current_page >= 0 and current_page < len(self.scrolled_windows):
+            current_scrolled = self.scrolled_windows[current_page]
+            vadjustment = current_scrolled.get_vadjustment()
+            hadjustment = current_scrolled.get_hadjustment()
+        
+        # Escape key - close window
         if keyval == 65307:  # Escape key
             self.window.close()
             return True
+        
+        # Q key - quit (vim-style)
+        elif keyval == 113:  # 'q' key
+            self.window.close()
+            return True
+        
+        # Tab navigation: H/L for previous/next tab
+        elif keyval == 72:  # 'H' key (Shift+h)
+            current_page = self.notebook.get_current_page()
+            if current_page > 0:
+                self.notebook.set_current_page(current_page - 1)
+            return True
+        
+        elif keyval == 76:  # 'L' key (Shift+l)
+            current_page = self.notebook.get_current_page()
+            total_pages = self.notebook.get_n_pages()
+            if current_page < total_pages - 1:
+                self.notebook.set_current_page(current_page + 1)
+            return True
+        
+        # Vim-style scrolling navigation
+        elif keyval == 106:  # 'j' key - scroll down
+            if current_page >= 0 and vadjustment:
+                current_value = vadjustment.get_value()
+                step = vadjustment.get_step_increment() * 3  # Scroll 3 lines at a time
+                new_value = min(current_value + step, vadjustment.get_upper() - vadjustment.get_page_size())
+                vadjustment.set_value(new_value)
+            return True
+        
+        elif keyval == 107:  # 'k' key - scroll up
+            if current_page >= 0 and vadjustment:
+                current_value = vadjustment.get_value()
+                step = vadjustment.get_step_increment() * 3  # Scroll 3 lines at a time
+                new_value = max(current_value - step, vadjustment.get_lower())
+                vadjustment.set_value(new_value)
+            return True
+        
+        # Page-wise navigation
+        elif keyval == 100:  # 'd' key - half page down (like Ctrl+D in vim)
+            if current_page >= 0 and vadjustment:
+                current_value = vadjustment.get_value()
+                half_page = vadjustment.get_page_size() / 2
+                new_value = min(current_value + half_page, vadjustment.get_upper() - vadjustment.get_page_size())
+                vadjustment.set_value(new_value)
+            return True
+        
+        elif keyval == 117:  # 'u' key - half page up (like Ctrl+U in vim)
+            if current_page >= 0 and vadjustment:
+                current_value = vadjustment.get_value()
+                half_page = vadjustment.get_page_size() / 2
+                new_value = max(current_value - half_page, vadjustment.get_lower())
+                vadjustment.set_value(new_value)
+            return True
+        
+        # Jump to beginning/end
+        elif keyval == 103:  # 'g' key - go to top (like gg in vim)
+            if current_page >= 0 and vadjustment:
+                vadjustment.set_value(vadjustment.get_lower())
+            return True
+        
+        elif keyval == 71:  # 'G' key (Shift+g) - go to bottom
+            if current_page >= 0 and vadjustment:
+                vadjustment.set_value(vadjustment.get_upper() - vadjustment.get_page_size())
+            return True
+        
+        # Horizontal scrolling (for wide content)
+        elif keyval == 104:  # 'h' key - scroll left
+            if current_page >= 0 and hadjustment:
+                current_value = hadjustment.get_value()
+                step = hadjustment.get_step_increment() * 2
+                new_value = max(current_value - step, hadjustment.get_lower())
+                hadjustment.set_value(new_value)
+            return True
+        
+        elif keyval == 108:  # 'l' key - scroll right
+            if current_page >= 0 and hadjustment:
+                current_value = hadjustment.get_value()
+                step = hadjustment.get_step_increment() * 2
+                new_value = min(current_value + step, hadjustment.get_upper() - hadjustment.get_page_size())
+                hadjustment.set_value(new_value)
+            return True
+        
+        # Number keys for direct tab navigation
+        elif keyval >= 49 and keyval <= 57:  # '1' to '9' keys
+            tab_index = keyval - 49  # Convert to 0-based index
+            total_pages = self.notebook.get_n_pages()
+            if tab_index < total_pages:
+                self.notebook.set_current_page(tab_index)
+            return True
+        
         return False
     
     def run(self):
