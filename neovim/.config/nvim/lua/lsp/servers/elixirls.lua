@@ -70,7 +70,16 @@ local config = {
     buf_map("n", "<leader>eT", function()
       local file = vim.fn.expand("%:p")
       local line = vim.fn.line(".")
-      vim.cmd("split | terminal mix test " .. vim.fn.fnameescape(file) .. ":" .. line)
+      
+      -- Compute project root using Elixir project patterns
+      local lspconfig = require("lspconfig")
+      local root_dir = lspconfig.util.root_pattern("mix.exs", ".git")(file) or vim.fn.getcwd()
+      
+      -- Safe argv-based terminal invocation
+      vim.cmd("split")
+      vim.fn.termopen({ "mix", "test", string.format("%s:%d", file, line) }, {
+        cwd = root_dir,
+      })
     end, { desc = "Run Test Under Cursor" })
 
     -- Pipe operator
