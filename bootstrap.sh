@@ -84,6 +84,18 @@ install_packages() {
     fi
 }
 
+# Install gaming packages
+install_gaming() {
+    log_header "INSTALLING GAMING PACKAGES"
+    
+    if [[ -f "$SETUP_DIR/packages/03-gaming-packages.sh" ]]; then
+        log_info "Installing gaming packages and drivers..."
+        bash "$SETUP_DIR/packages/03-gaming-packages.sh"
+    else
+        log_warning "Gaming packages script not found, skipping..."
+    fi
+}
+
 # Setup themes
 setup_themes() {
     log_header "SETTING UP THEMES"
@@ -166,6 +178,7 @@ deploy_dotfiles() {
         "neovim"
         "themes"
         "sddm"
+        "gaming"
     )
     
     cd "$SCRIPT_DIR"
@@ -230,10 +243,11 @@ interactive_menu() {
     echo "7. Setup SDDM only"
     echo "8. Setup Zsh shell only"
     echo "9. Setup Python build dependencies only"
-    echo "10. Exit"
+    echo "10. Install gaming setup (Steam + GE-Proton)"
+    echo "11. Exit"
     echo
     
-    read -p "Choose an option (1-10): " choice
+    read -p "Choose an option (1-11): " choice
     
     case $choice in
         1)
@@ -286,6 +300,23 @@ interactive_menu() {
             fi
             ;;
         10)
+            install_gaming
+            if [[ -d "gaming" ]]; then
+                log_info "Deploying gaming configurations..."
+                if stow -t "$HOME" "gaming"; then
+                    log_success "Gaming configurations deployed"
+                else
+                    log_warning "Failed to deploy gaming configurations"
+                fi
+            fi
+            if [[ -f "$SETUP_DIR/system/setup-ge-proton.sh" ]]; then
+                log_info "Setting up GE-Proton..."
+                bash "$SETUP_DIR/system/setup-ge-proton.sh"
+            else
+                log_warning "GE-Proton setup script not found"
+            fi
+            ;;
+        11)
             log_info "Exiting..."
             exit 0
             ;;
@@ -379,6 +410,23 @@ main() {
                     log_error "Python build dependencies script not found"
                 fi
                 ;;
+            --gaming)
+                install_gaming
+                if [[ -d "gaming" ]]; then
+                    log_info "Deploying gaming configurations..."
+                    if stow -t "$HOME" "gaming"; then
+                        log_success "Gaming configurations deployed"
+                    else
+                        log_warning "Failed to deploy gaming configurations"
+                    fi
+                fi
+                if [[ -f "$SETUP_DIR/system/setup-ge-proton.sh" ]]; then
+                    log_info "Setting up GE-Proton..."
+                    bash "$SETUP_DIR/system/setup-ge-proton.sh"
+                else
+                    log_warning "GE-Proton setup script not found"
+                fi
+                ;;
             --help)
                 echo "Usage: $0 [option]"
                 echo "Options:"
@@ -391,6 +439,7 @@ main() {
                 echo "  --sddm      : Setup SDDM display manager only"
                 echo "  --zsh       : Setup Zsh shell only"
                 echo "  --python-deps : Setup Python build dependencies only"
+                echo "  --gaming    : Install gaming setup (Steam + drivers + GE-Proton)"
                 echo "  --help      : Show this help"
                 exit 0
                 ;;

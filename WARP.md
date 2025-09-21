@@ -114,12 +114,12 @@ mise prune                   # Clean unused versions
 mise doctor                  # Check configuration
 ```
 
-### Python Package Management (UV)
+### UV Python Package Management (UV)
 ```bash
-# Install Python packages globally (using system Python)
-uv tool install waypaper --python /usr/bin/python3  # Install GUI apps with system Python for gi access
-uv tool install black --python /usr/bin/python3     # Install dev tools globally
-uv tool list                                         # List globally installed tools
+# Install Python packages globally (UV now uses system Python by default)
+uv tool install waypaper     # Install GUI apps (gi/GTK access works with system Python)
+uv tool install black       # Install dev tools globally
+uv tool list                 # List globally installed tools
 
 # Project-specific Python environment management
 uv venv                                              # Create virtual environment
@@ -368,6 +368,255 @@ When working on Angular projects within this environment, follow modern Angular 
 - Follow Angular file naming conventions from the official style guide
 - Leverage the pre-configured Angular CLI environment variables in mise configuration
 
+## Gaming Setup and Management
+
+This repository includes comprehensive gaming support with Steam, GE-Proton, and performance optimization tools that automatically detect and configure appropriate drivers for different graphics cards.
+
+### Gaming Installation
+```bash
+# Full gaming setup (recommended)
+./bootstrap.sh --gaming              # Install all gaming components
+
+# Individual gaming components
+./setup/packages/03-gaming-packages.sh       # Install Steam + drivers + tools
+./setup/system/setup-ge-proton.sh install    # Install latest GE-Proton
+stow -t ~ gaming                              # Deploy gaming configs
+```
+
+### GE-Proton Management
+```bash
+# Install/update to latest GE-Proton
+./setup/system/setup-ge-proton.sh install
+./setup/system/setup-ge-proton.sh update
+
+# List installed versions
+./setup/system/setup-ge-proton.sh list
+
+# Remove specific version
+./setup/system/setup-ge-proton.sh remove GE-Proton8-26
+
+# Clean up old versions (keep latest 3)
+./setup/system/setup-ge-proton.sh cleanup
+
+# Show Steam configuration instructions
+./setup/system/setup-ge-proton.sh instructions
+```
+
+### Steam Optimization
+```bash
+# Launch Steam with gaming optimizations
+steam-gaming                    # Uses GameMode + MangoHud + performance tuning
+
+# Manual Steam launch with optimizations
+gamemoderun mangohud steam      # Enable GameMode and MangoHud overlay
+
+# Steam with specific game
+steam-gaming steam://rungameid/12345
+
+# Check gaming tool availability
+which gamemoderun               # GameMode for performance optimization
+which mangohud                  # Performance overlay
+nvtop                          # GPU monitoring (NVIDIA)
+radeontop                      # GPU monitoring (AMD)
+```
+
+
+### Gaming Performance Configuration
+
+#### MangoHud Overlay
+```bash
+# Deploy MangoHud configuration
+stow -t ~ gaming                # Deploy gaming configs including MangoHud
+
+# MangoHud controls (in-game)
+# Shift+Right+F12 - Toggle overlay
+# Shift+Left+F2   - Toggle logging
+# Shift+Left+F4   - Reload config
+
+# Test MangoHud
+mangohud glxgears               # Test with simple OpenGL application
+mangohud vkcube                 # Test with Vulkan application
+
+# Custom MangoHud configuration
+nvim ~/.config/MangoHud/MangoHud.conf
+```
+
+#### GameMode Performance
+```bash
+# Check GameMode status
+gamemoded --status              # Check GameMode daemon status
+gamemode --status               # Check if GameMode is active
+
+# GameMode configuration
+nvim ~/.config/gamemode.ini     # Edit GameMode settings
+
+# Test GameMode
+gamemoderun glxgears            # Test GameMode with simple application
+```
+
+### Graphics Driver Management
+
+The gaming setup automatically detects your graphics hardware and installs appropriate drivers:
+
+#### NVIDIA GPUs
+```bash
+# Check NVIDIA driver status
+nvidia-smi                      # Show GPU status and driver version
+nvtop                          # Real-time GPU monitoring
+nvidia-settings                 # NVIDIA control panel
+
+# NVIDIA optimizations (automatically applied)
+# - Shader disk cache enabled
+# - Threaded optimizations enabled
+# - Persistent daemon enabled
+```
+
+#### AMD GPUs
+```bash
+# Check AMD driver status
+lspci | grep VGA                # Show graphics hardware
+radeontop                      # Real-time GPU monitoring
+
+# AMD optimizations (automatically applied via environment variables)
+# - RADV performance optimizations enabled
+# - Vulkan drivers configured
+# - Mesa optimizations applied
+```
+
+#### Intel GPUs
+```bash
+# Check Intel GPU status
+intel_gpu_top                  # Real-time GPU monitoring
+lspci | grep VGA               # Show graphics hardware
+
+# Intel optimizations (automatically applied)
+# - Vulkan drivers configured
+# - Mesa optimizations applied
+```
+
+### Steam Configuration
+
+#### Proton Settings in Steam
+1. **Global Settings**:
+   - Steam → Settings → Steam Play
+   - Enable "Steam Play for supported titles"
+   - Enable "Steam Play for all other titles"
+   - Select GE-Proton version from dropdown
+
+2. **Per-Game Settings**:
+   - Right-click game → Properties → Compatibility
+   - Check "Force the use of a specific Steam Play compatibility tool"
+   - Select GE-Proton version
+
+#### Common Launch Options
+```bash
+# Performance launch options (add to game properties)
+gamemoderun mangohud %command%           # GameMode + MangoHud
+PROTON_USE_WINED3D=1 %command%           # Use WineD3D instead of DXVK
+PROTON_NO_ESYNC=1 %command%              # Disable esync
+PROTON_NO_FSYNC=1 %command%              # Disable fsync
+PROTON_FORCE_LARGE_ADDRESS_AWARE=1 %command%  # 4GB+ memory for 32-bit games
+
+# Vulkan specific
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json %command%
+```
+
+### Gaming Directory Structure
+
+```
+gaming/
+├── .config/
+│   ├── environment.d/
+│   │   └── gaming.conf          # Gaming environment variables
+│   ├── MangoHud/
+│   │   └── MangoHud.conf        # Performance overlay configuration
+│   └── gamemode.ini             # GameMode performance settings
+└── .local/bin/
+    └── steam-gaming             # Optimized Steam launcher script
+```
+
+### Troubleshooting Gaming Issues
+
+#### Steam Issues
+```bash
+# Steam won't start
+rm -rf ~/.steam/steam/logs       # Clear Steam logs
+steam --reset                    # Reset Steam client
+
+# Missing 32-bit libraries
+sudo pacman -S lib32-mesa lib32-vulkan-radeon lib32-nvidia-utils
+
+# Audio issues in games
+pulseaudio --kill && pulseaudio --start  # Restart PulseAudio
+
+# Proton game crashes
+# Check ProtonDB: https://www.protondb.com
+# Try different Proton versions in game properties
+```
+
+#### Performance Issues
+```bash
+# Check GPU driver status
+lspci -k | grep -A 2 -i vga     # Show graphics driver in use
+
+# Monitor performance
+mangohud glxgears               # Test OpenGL performance
+vulkaninfo                      # Check Vulkan installation
+
+# GameMode not working
+sudo usermod -aG gamemode $USER  # Add user to gamemode group
+# Logout and login again
+
+# Check GameMode logs
+journalctl --user -u gamemoded
+```
+
+#### GE-Proton Issues
+```bash
+# GE-Proton not showing in Steam
+# 1. Restart Steam completely
+# 2. Check installation path
+ls ~/.steam/root/compatibilitytools.d/
+
+# 3. Verify GE-Proton integrity
+./setup/system/setup-ge-proton.sh list
+
+# 4. Reinstall if needed
+./setup/system/setup-ge-proton.sh install
+```
+
+#### Lutris Issues
+```bash
+# Lutris "No module named 'lutris'" error (common with mise Python)
+# This happens when mise-managed Python conflicts with system Python
+sudo cp /usr/bin/lutris /usr/bin/lutris.backup
+sudo sed -i '1s|#!/usr/bin/env python3|#!/usr/bin/python3|' /usr/bin/lutris
+sudo pacman -S --needed vulkan-tools python-protobuf
+
+# Test Lutris
+lutris --version
+lutris --list-games
+
+# Battle.net not showing in Lutris Sources
+# Install protobuf support
+sudo pacman -S python-protobuf
+# Restart Lutris
+```
+
+#### Controller Issues
+```bash
+# Xbox controller setup
+sudo modprobe xpadneo            # Load Xbox controller driver
+
+# Steam controller configuration
+# Steam → Settings → Controller → General Controller Settings
+# Enable configuration for your controller type
+
+# Test controller
+jstest /dev/input/js0           # Test controller input
+evtest /dev/input/event*        # Monitor all input events
+```
+
 ## Troubleshooting
 
 ### Common Stow Issues
@@ -391,6 +640,26 @@ mise doctor                  # Check configuration
 # Fix path issues
 export PATH="$HOME/.local/share/mise/shims:$PATH"
 mise reshim                  # Regenerate shims
+```
+
+### Python/Mise Conflicts (SRE Module Mismatch)
+```bash
+# If experiencing Python version conflicts between mise and system Python:
+# 1. Remove Python from mise completely
+mise uninstall python@3.12.1
+sudo rm -rf ~/.local/share/mise/installs/python
+
+# 2. Update mise configuration to comment out Python
+# Edit ~/.mise.toml and change:
+# python = "3.12.1" -> # python = "3.12.1"  # Use system Python
+
+# 3. Use system Python (3.13+) and UV for package management
+python3 --version                    # Should show system Python 3.13+
+uv tool install black               # Use UV for global Python tools
+uv pip install requests             # Use UV for project dependencies
+
+# 4. GUI applications requiring GTK (like waypaper) work better with system Python
+uv tool install waypaper            # Now uses system Python with GTK access
 ```
 
 ### Python Build Dependencies (AUR Packages)
