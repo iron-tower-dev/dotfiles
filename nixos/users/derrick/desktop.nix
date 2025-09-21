@@ -62,7 +62,6 @@
       window-format = "{w} · {c} · {t}";
     };
   };
-  };
 
   # Link Rofi configuration from dotfiles if it exists
   home.file.".config/rofi" = lib.mkIf (builtins.pathExists "${config.home.homeDirectory}/dotfiles/rofi") {
