@@ -102,9 +102,16 @@ deploy_system() {
     cd "$FLAKE_DIR"
     
     # Check if the host configuration exists
-    if ! nix eval ".#nixosConfigurations.${hostname}" --no-warn-dirty >/dev/null 2>&1; then
+    if ! nix eval ".#nixosConfigurations[\"${hostname}\"]" --no-warn-dirty >/dev/null 2>&1; then
         log_warning "Host configuration '$hostname' not found. Available hosts:"
-        nix eval '.#nixosConfigurations' --apply 'builtins.attrNames' --json | jq -r '.[]' | sed 's/^/  - /'
+        
+        # List available hosts with fallback for missing jq
+        if command -v jq >/dev/null 2>&1; then
+            nix eval '.#nixosConfigurations' --apply 'builtins.attrNames' --json | jq -r '.[]' | sed 's/^/  - /'
+        else
+            log_warning "jq not found, showing raw list:"
+            nix eval '.#nixosConfigurations' --apply 'builtins.attrNames' --json 2>/dev/null || echo "  (Unable to list available hosts)"
+        fi
         
         read -p "Enter hostname to use (or 'skip' to skip system deployment): " new_hostname
         if [[ "$new_hostname" == "skip" ]]; then
@@ -135,9 +142,16 @@ deploy_home() {
     cd "$FLAKE_DIR"
     
     # Check if the home configuration exists
-    if ! nix eval ".#homeConfigurations.\"${config_name}\"" --no-warn-dirty >/dev/null 2>&1; then
+    if ! nix eval ".#homeConfigurations[\"${config_name}\"]" --no-warn-dirty >/dev/null 2>&1; then
         log_warning "Home configuration '$config_name' not found. Available configurations:"
-        nix eval '.#homeConfigurations' --apply 'builtins.attrNames' --json | jq -r '.[]' | sed 's/^/  - /'
+        
+        # List available configurations with fallback for missing jq
+        if command -v jq >/dev/null 2>&1; then
+            nix eval '.#homeConfigurations' --apply 'builtins.attrNames' --json | jq -r '.[]' | sed 's/^/  - /'
+        else
+            log_warning "jq not found, showing raw list:"
+            nix eval '.#homeConfigurations' --apply 'builtins.attrNames' --json 2>/dev/null || echo "  (Unable to list available configurations)"
+        fi
         
         read -p "Enter configuration to use (or 'skip' to skip home deployment): " new_config
         if [[ "$new_config" == "skip" ]]; then
