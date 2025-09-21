@@ -1,6 +1,12 @@
 # 🌸 Hyprland Dotfiles with Catppuccin Macchiato
 
-A complete, automated Arch Linux desktop setup featuring Hyprland, Waybar, and beautiful Catppuccin Macchiato theming. Get a fully configured, modern Linux desktop in minutes!
+A complete, automated desktop setup featuring Hyprland, Waybar, and beautiful Catppuccin Macchiato theming. Supports both **Arch Linux** (traditional setup) and **NixOS** (flakes + Home Manager). Get a fully configured, modern Linux desktop in minutes!
+
+## 🐧 Multi-Distribution Support
+
+- **Arch Linux**: Traditional dotfiles with GNU Stow and automated setup scripts
+- **NixOS**: Flake-based configuration with Home Manager for declarative system management
+- **Shared Resources**: Wallpapers, themes, and core configurations work on both systems
 
 ## 🎨 Theme Preview
 
@@ -47,12 +53,14 @@ A complete, automated Arch Linux desktop setup featuring Hyprland, Waybar, and b
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### For Arch Linux
+
+#### Prerequisites
 - Fresh Arch Linux installation
-- Internet connection
+- Internet connection  
 - User with sudo privileges
 
-### One-Command Installation
+#### One-Command Installation
 
 ```bash
 # Clone the dotfiles repository
@@ -65,6 +73,26 @@ chmod +x bootstrap.sh
 ```
 
 The script will guide you through an interactive installation process.
+
+### For NixOS
+
+#### Prerequisites
+- NixOS installation with flakes enabled
+- Git access to this repository
+- Home Manager (installed automatically)
+
+#### One-Command Deployment
+
+```bash
+# Clone the dotfiles repository
+git clone https://github.com/yourusername/dotfiles.git ~/dotfiles
+cd ~/dotfiles/nixos
+
+# Run the deployment script
+./scripts/deploy.sh
+```
+
+See [nixos/README.md](nixos/README.md) for detailed NixOS setup instructions.
 
 ## 📦 Installation Options
 
@@ -144,43 +172,67 @@ stow -R -t ~ hyprland
 ### Directory Structure
 ```
 dotfiles/
-├── bootstrap.sh           # Main setup script
+├── bootstrap.sh           # Arch Linux setup script
 ├── README.md              # This file
-├── hyprland/              # Hyprland configuration
+├── nixos/                 # NixOS configuration (flakes + Home Manager)
+│   ├── flake.nix          # Main flake configuration
+│   ├── modules/           # Custom NixOS modules
+│   ├── hosts/             # Host-specific configurations
+│   ├── users/             # Home Manager user configs
+│   ├── scripts/           # Deployment scripts
+│   └── README.md          # NixOS-specific documentation
+├── hyprland/              # Hyprland configuration (shared)
 │   └── .config/hypr/
-├── waybar/                # Waybar configuration
+├── waybar/                # Waybar configuration (shared)
 │   └── .config/waybar/
-├── alacritty/             # Terminal configuration
+├── wallpapers/            # Wallpaper collection (shared)
+├── alacritty/             # Terminal configuration (shared)
 │   └── .config/alacritty/
-├── rofi/                  # Application launcher
+├── rofi/                  # Application launcher (shared)
 │   └── .config/rofi/
-├── fish/                  # Fish shell configuration (default)
+├── fish/                  # Fish shell configuration (shared)
 │   └── .config/fish/
-├── nushell/               # Nushell configuration  
+├── nushell/               # Nushell configuration (shared)
 │   └── .config/nushell/
-├── starship/              # Starship prompt configuration
+├── starship/              # Starship prompt configuration (shared)
 │   └── .config/starship.toml
-├── themes/                # GTK/Qt theme configurations
+├── neovim/                # Neovim configuration (shared)
+│   └── .config/nvim/
+├── themes/                # GTK/Qt theme configurations (Arch)
 │   ├── .config/gtk-3.0/
 │   ├── .config/gtk-4.0/
 │   ├── .config/qt5ct/
 │   ├── .config/qt6ct/
 │   ├── .config/Kvantum/
 │   └── .gtkrc-2.0
-├── zsh/                   # Shell configuration
-│   └── .zshrc
-├── git/                   # Git configuration
+├── git/                   # Git configuration (shared)
 │   ├── .gitconfig
 │   └── README.md
-├── mise/                  # Programming language version manager
+├── mise/                  # Programming language version manager (shared)
 │   ├── .config/mise/
 │   ├── .mise.toml
 │   └── README.md
-└── setup/                 # Installation scripts
+├── sddm/                  # SDDM display manager configuration (shared)
+│   └── sddm.conf
+└── setup/                 # Arch Linux installation scripts
     ├── packages/
     ├── themes/
     └── system/
 ```
+
+### Shared vs. Distribution-Specific
+
+**Shared Configurations** (work on both Arch Linux and NixOS):
+- Hyprland, Waybar, Alacritty, Rofi configurations  
+- Shell configurations (Fish, Nushell, Starship)
+- Neovim configuration
+- Git configuration and aliases
+- Wallpapers and SDDM themes
+- Mise development tool configuration
+
+**Distribution-Specific**:
+- **Arch Linux**: `bootstrap.sh`, `setup/` scripts, `themes/` (manual GTK/Qt setup)
+- **NixOS**: `nixos/` directory with flakes, modules, and Home Manager configurations
 
 ## ⌨️ Key Bindings
 
