@@ -29,6 +29,7 @@
         Description = "Initialize wallpaper system with swww";
         After = [ "graphical-session-pre.target" ];
         PartOf = [ "graphical-session.target" ];
+        ConditionPathExists = "${config.home.homeDirectory}/dotfiles/waybar/.config/waybar/scripts/wallpaper-init.sh";
       };
       
       Install = {
