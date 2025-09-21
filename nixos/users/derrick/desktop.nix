@@ -29,22 +29,15 @@
     };
   };
 
-  # Waybar configuration
+  # Waybar configuration - link directly from dotfiles
   programs.waybar = {
     enable = true;
     package = pkgs.waybar;
-    
-    # We'll use the existing waybar config from dotfiles
-    # Import settings from the JSON file
-    settings = builtins.fromJSON (builtins.readFile ../../../waybar/.config/waybar/config);
-    
-    # Import styles from the CSS file
-    style = builtins.readFile ../../../waybar/.config/waybar/style.css;
   };
 
-  # Link Waybar scripts from dotfiles
-  home.file.".config/waybar/scripts" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/waybar/.config/waybar/scripts";
+  # Link complete Waybar configuration from dotfiles
+  home.file.".config/waybar" = {
+    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/waybar/.config/waybar";
     recursive = true;
   };
 
