@@ -20,7 +20,6 @@ return {
       },
       registries = {
         "github:mason-org/mason-registry",
-        "github:Crashdummyy/mason-registry", -- For Roslyn LSP
       },
     },
   },
@@ -42,7 +41,7 @@ return {
         "angularls",        -- Angular
         "elixirls",         -- Elixir
         "gopls",            -- Go
-        -- Note: roslyn is installed via custom Mason registry
+        "omnisharp",        -- C#
       },
       -- Automatically setup servers installed via Mason
       automatic_installation = true,
@@ -119,19 +118,6 @@ return {
         end
       end
       
-      -- Manual setup for Roslyn (from custom registry)
-      local roslyn_ok, roslyn_config = pcall(require, "lsp.servers.roslyn")
-      if roslyn_ok and roslyn_config then
-        pcall(function()
-          -- Use new vim.lsp.config API if available, fallback to lspconfig
-          if vim.lsp.config and vim.lsp.config.roslyn then
-            vim.lsp.config.roslyn(roslyn_config)
-          else
-            -- Fallback to lspconfig for compatibility
-            require("lspconfig").roslyn.setup(roslyn_config)
-          end
-        end)
-      end
     end,
   },
 

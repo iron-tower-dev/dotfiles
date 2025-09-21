@@ -1,46 +1,49 @@
 -- ================================================================================================
--- TITLE : C# Roslyn LSP Configuration
--- ABOUT : Configuration for C# Roslyn Language Server
+-- TITLE : C# OmniSharp LSP Configuration
+-- ABOUT : Configuration for C# OmniSharp Language Server
 -- ================================================================================================
 
 local defaults = require("lsp.utils.defaults")
 
--- C# Roslyn-specific configuration
+-- C# OmniSharp-specific configuration
 local config = {
-  -- Roslyn settings
+  -- OmniSharp settings
   settings = {
-    ["csharp|inlay_hints"] = {
-      csharp_enable_inlay_hints_for_implicit_object_creation = true,
-      csharp_enable_inlay_hints_for_implicit_variable_types = true,
-      csharp_enable_inlay_hints_for_lambda_parameter_types = true,
-      csharp_enable_inlay_hints_for_types = true,
-      dotnet_enable_inlay_hints_for_indexer_parameters = true,
-      dotnet_enable_inlay_hints_for_literal_parameters = true,
-      dotnet_enable_inlay_hints_for_object_creation_parameters = true,
-      dotnet_enable_inlay_hints_for_other_parameters = true,
-      dotnet_enable_inlay_hints_for_parameters = true,
-      dotnet_suppress_inlay_hints_for_parameters_that_differ_only_by_suffix = true,
-      dotnet_suppress_inlay_hints_for_parameters_that_match_argument_name = true,
-      dotnet_suppress_inlay_hints_for_parameters_that_match_method_intent = true,
+    FormattingOptions = {
+      -- Enables support for reading code style, naming convention and analyzer
+      -- settings from .editorconfig.
+      EnableEditorConfigSupport = true,
+      -- Specifies whether 'using' directives should be grouped and sorted during
+      -- document formatting.
+      OrganizeImports = true,
     },
-    ["csharp|code_lens"] = {
-      dotnet_enable_references_code_lens = true,
-      dotnet_enable_tests_code_lens = true,
+    MsBuild = {
+      -- If true, MSBuild project system will only load projects for files that
+      -- were opened in the editor. This setting is useful for big C# codebases
+      -- and allows for faster initialization of code navigation features only
+      -- for projects that are relevant to code that is being edited. With this
+      -- setting enabled OmniSharp will also avoid loading projects that could
+      -- not be loaded successfully.
+      LoadProjectsOnDemand = nil,
     },
-    ["csharp|completion"] = {
-      dotnet_provide_regex_completions = true,
-      dotnet_show_completion_items_from_unimported_namespaces = true,
-      dotnet_show_name_completion_suggestions = true,
+    RoslynExtensionsOptions = {
+      -- Enables support for roslyn analyzers, code fixes and rulesets.
+      EnableAnalyzersSupport = true,
+      -- Enables support for showing unimported types and unimported extension
+      -- methods in completion lists. When committed, the appropriate using
+      -- directive will be added at the top of the current file. This option can
+      -- have a negative impact on initial completion responsiveness,
+      -- particularly for the first few completion sessions after opening a
+      -- solution.
+      EnableImportCompletion = true,
+      -- Only run analyzers against open files when 'enableRoslynAnalyzers' is
+      -- true
+      AnalyzeOpenDocumentsOnly = nil,
     },
-    ["csharp|highlighting"] = {
-      dotnet_highlight_related_json_components = true,
-      dotnet_highlight_related_regex_components = true,
-    },
-    ["csharp|quick_info"] = {
-      dotnet_show_remarks_in_quick_info = true,
-    },
-    ["csharp|symbol_search"] = {
-      dotnet_search_reference_assemblies = true,
+    Sdk = {
+      -- Specifies whether to include preview versions of the .NET SDK when
+      -- determining which version to use for project loading.
+      IncludePrereleases = true,
     },
   },
 
@@ -127,10 +130,11 @@ local config = {
     buf_map("n", "<leader>cn", function()
       local class_name = vim.fn.input("Class name: ")
       if class_name ~= "" then
+        local namespace = vim.fn.fnamemodify(get_root_dir(), ":t")
         local template = {
           "using System;",
           "",
-          "namespace " .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. ";",
+          "namespace " .. namespace .. ";",
           "",
           "public class " .. class_name,
           "{",
@@ -142,26 +146,6 @@ local config = {
         vim.api.nvim_buf_set_lines(0, 0, -1, false, template)
       end
     end, { desc = "New Class" })
-
-    -- Generate constructor
-    buf_map("n", "<leader>cg", function()
-      vim.lsp.buf.code_action({
-        context = {
-          only = { "refactor.generate.constructor" },
-          diagnostics = {},
-        },
-      })
-    end, { desc = "Generate Constructor" })
-
-    -- Extract method
-    buf_map("n", "<leader>ce", function()
-      vim.lsp.buf.code_action({
-        context = {
-          only = { "refactor.extract.method" },
-          diagnostics = {},
-        },
-      })
-    end, { desc = "Extract Method" })
 
     -- Format document
     buf_map("n", "<leader>cf", function()
@@ -195,18 +179,24 @@ local config = {
     buf_map("n", "<leader>ci", function()
       run_dotnet_command({"--info"}, "Project Info")
     end, { desc = "Show Project Info" })
+
+    -- OmniSharp specific commands
+    buf_map("n", "<leader>cD", function()
+      vim.lsp.buf.code_action({
+        context = { only = { "refactor.rewrite" } }
+      })
+    end, { desc = "Decompile" })
+
+    -- Fix usings
+    buf_map("n", "<leader>cu", function()
+      vim.lsp.buf.code_action({
+        context = { only = { "source.organizeImports" } }
+      })
+    end, { desc = "Organize Imports" })
   end,
 
   -- File types for C# files
-  filetypes = { 
-    "cs", 
-    "csharp",
-    -- Project files
-    "csproj",
-    "sln",
-    "props",
-    "targets",
-  },
+  filetypes = { "cs" },
 
   -- Root directory patterns for C# projects
   root_dir = function(fname)
@@ -305,44 +295,10 @@ local config = {
     },
   },
 
-  -- Handler overrides for better C# experience
-  handlers = {
-    ["textDocument/definition"] = function(err, result, method, ...)
-      -- Custom definition handler to handle C# metadata and deduplicate results
-      if vim.tbl_islist(result) and #result > 1 then
-        local filtered_result = {}
-        local seen_uris = {}
-        local fallback_counter = 0
-        
-        for _, res in ipairs(result) do
-          -- Handle both Location and LocationLink objects
-          local uri = res.uri or res.targetUri
-          
-          -- Guard against nil uri with unique fallback
-          if not uri then
-            fallback_counter = fallback_counter + 1
-            uri = "__fallback__" .. fallback_counter
-          end
-          
-          -- Deduplicate while preserving original order
-          if not seen_uris[uri] then
-            table.insert(filtered_result, res)
-            seen_uris[uri] = true
-          end
-        end
-        
-        return vim.lsp.handlers["textDocument/definition"](err, filtered_result, method, ...)
-      end
-      
-      -- Pass through original result when no filtering needed
-      return vim.lsp.handlers["textDocument/definition"](err, result, method, ...)
-    end,
-  },
-
-  -- Additional initialization options
+  -- Initialize OmniSharp with some useful init_options
   init_options = {
-    -- Enable enhanced colorization
-    semanticHighlighting = true,
+    -- Improve startup time by analyzing only opened files
+    analyzeOpenDocumentsOnly = true,
   },
 }
 

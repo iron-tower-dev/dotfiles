@@ -5,6 +5,9 @@ experimental = true
 quiet = false
 
 [tools]
+dotnet = "latest"
+java = "25.0.0"
+leiningen = "latest"
 node = "22.19.0"
 usage = "latest"
 uv = "latest"

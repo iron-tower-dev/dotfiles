@@ -153,7 +153,7 @@ local filetype_to_server = {
   javascriptreact = "ts_ls",
   elixir = "elixirls",
   go = "gopls",
-  cs = "roslyn",
+  cs = "omnisharp",
 }
 
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
