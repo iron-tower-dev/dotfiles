@@ -86,22 +86,26 @@
 #idle_inhibitor {
   background: @surface0;
   border-radius: 8px;
-  padding: 4px 10px;
+  padding: 6px 10px;  /* More even padding for icons */
   margin: 3px 4px;
-  border: 1px solid @surface2;
+  border: 1px solid @overlay1;  /* Default neutral border for inactive state */
   transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  font-size: 16px;
+  min-width: 24px;
 }
 
 #idle_inhibitor.activated {
   color: @green;
   background: @surface1;
-  border: 1px solid @green;
+  border: 1px solid @green;  /* Border matches icon color */
   box-shadow: 0 0 0 1px @green;
 }
 
 #idle_inhibitor.deactivated {
   color: @overlay1;
   background: @surface0;
+  border: 1px solid @overlay1;  /* Border matches icon color */
 }
 
 /* Base module styling */
@@ -129,6 +133,7 @@
 #custom-memory,
 #custom-disk,
 #custom-wallpaper,
+#custom-keybinds,
 #tray,
 #backlight,
 #clock,
@@ -156,8 +161,15 @@
 #battery:hover,
 #pulseaudio:hover {
   background: @surface1;
-  border: 1px solid @overlay1;
+  border: 1px solid @overlay2;  /* Consistent 1px border thickness on hover */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Separate hover state for icon-only modules that already have custom hover */
+#custom-keybinds:hover,
+#custom-wallpaper:hover,
+#custom-power:hover {
+  /* These already have their specific hover states defined above */
 }
 
 /* Weather module */
@@ -214,9 +226,13 @@
   }
 }
 
-/* Network module */
+/* Network module - same spacing as icon-only modules */
 #custom-network {
   color: @blue;
+  background: @surface0;
+  border: 1px solid @blue;  /* Border matches icon color */
+  padding: 6px 10px;  /* Same padding as icon-only modules */
+  min-width: 24px;
 }
 
 #custom-network.connected {
@@ -330,12 +346,32 @@
   border: 1px solid @overlay1;
 }
 
-/* Wallpaper module */
+
+/* Icon-only modules - ensure even padding around icons */
+#custom-keybinds {
+  color: @mauve;
+  background: @surface0;
+  border: 1px solid @mauve;  /* Border matches icon color */
+  padding: 6px 10px;  /* More even padding for icons */
+  font-size: 16px;
+  min-width: 24px;
+}
+
+#custom-keybinds:hover {
+  color: @base;
+  background: @mauve;
+  border: 1px solid @mauve;
+  box-shadow: 0 2px 8px rgba(198, 160, 246, 0.3);
+}
+
+/* Wallpaper module - icon only */
 #custom-wallpaper {
   color: @peach;
   background: @surface0;
-  border: 1px solid @peach;
+  border: 1px solid @peach;  /* Border matches icon color */
+  padding: 6px 10px;  /* More even padding for icons */
   font-size: 16px;
+  min-width: 24px;
 }
 
 #custom-wallpaper:hover {
@@ -348,15 +384,18 @@
 #custom-wallpaper.wallpaper-inactive {
   color: @overlay1;
   background: @surface0;
-  border: 1px solid @overlay1;
+  border: 1px solid @overlay1;  /* Border matches icon color when inactive */
 }
 
-/* Power module */
+/* Power module - icon only */
 #custom-power {
   color: @red;
   background: @surface0;
-  border: 1px solid @red;
+  border: 1px solid @red;  /* Border matches icon color */
+  padding: 6px 10px;  /* More even padding for icons */
+  font-size: 16px;
   font-weight: bold;
+  min-width: 24px;
 }
 
 #custom-power:hover {
@@ -366,10 +405,15 @@
   box-shadow: 0 4px 16px rgba(237, 135, 150, 0.5);
 }
 
-/* Tray */
+/* Tray - ensure consistent styling with other modules */
 #tray {
   background: @surface0;
-  border: 1px solid @surface2;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 3px 4px;
+  transition: all 0.3s ease;
+  border: 1px solid @overlay1;  /* Match standard border thickness */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Tooltip styling */

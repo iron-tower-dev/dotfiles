@@ -29,7 +29,7 @@ case "$1" in
     "memory")
         memory=$(get_memory_usage)
         memory_details=$(free -h | awk 'NR==2{printf "Used: %s / %s", $3, $2}')
-        echo "{\"text\": \" $memory\", \"tooltip\": \"Memory Usage: $memory\\n$memory_details\"}"
+        echo "{\"text\": \"  $memory\", \"tooltip\": \"Memory Usage: $memory\\n$memory_details\"}"
         ;;
     "disk")
         disk=$(get_disk_usage)

@@ -60,7 +60,7 @@ if [[ "$interface" =~ ^wl ]]; then
     fi
 else
     # Wired interface
-    icon="󰈀 "
+    icon="󰈀"
     connection_type="Ethernet"
     connection_info="Wired Connection"
 fi

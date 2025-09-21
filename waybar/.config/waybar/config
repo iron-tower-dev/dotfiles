@@ -41,8 +41,8 @@
     "idle_inhibitor": {
         "format": "{icon}",
         "format-icons": {
-            "activated": "󰛐 ",
-            "deactivated": "󰛑 "
+            "activated": "󰛐",
+            "deactivated": "󰛑"
         },
         "tooltip-format-activated": "Idle inhibitor is active",
         "tooltip-format-deactivated": "Idle inhibitor is inactive"
@@ -152,12 +152,12 @@
         "format": "{icon} {volume}%",
         "format-muted": "volume_off Muted",
         "format-icons": {
-            "headphone": "󰋋 ",
-            "hands-free": "󰍬 ",
-            "headset": "󰋎 ",
-            "phone": "󰏲 ",
-            "portable": "󰜟 ",
-            "car": "󰄋 ",
+            "headphone": "󰋋",
+            "hands-free": "󰍬",
+            "headset": "󰋎",
+            "phone": "󰏲",
+            "portable": "󰜟",
+            "car": "󰄋",
             "default": ["[─]", "[▬]", "[█]"]
         },
         "on-click": "pavucontrol",
