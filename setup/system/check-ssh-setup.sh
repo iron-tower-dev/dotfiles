@@ -39,4 +39,4 @@ fi
 
 echo
 echo -e "${YELLOW}📋 Ready to push to GitHub? Run:${NC}"
-echo "   ./setup-github-repo.sh"
+echo "   ./setup/system/setup-github-repo.sh"

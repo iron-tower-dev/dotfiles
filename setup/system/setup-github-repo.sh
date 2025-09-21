@@ -42,7 +42,7 @@ EOF
 check_directory() {
     if [[ ! -f "bootstrap.sh" || ! -f "README.md" ]]; then
         log_error "This script must be run from the dotfiles directory"
-        log_info "Please run: cd ~/dotfiles && ./setup-github-repo.sh"
+        log_info "Please run: cd ~/dotfiles && ./setup/system/setup-github-repo.sh"
         exit 1
     fi
     log_success "Running from dotfiles directory"

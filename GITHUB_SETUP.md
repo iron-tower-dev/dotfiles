@@ -18,7 +18,7 @@ Your current setup:
 eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519
 
 # Run the automated setup script
-./setup-github-repo.sh
+./setup/system/setup-github-repo.sh
 ```
 
 This script will:
@@ -42,7 +42,7 @@ git init
 git branch -M main
 
 # 3. Create .gitignore (optional - the script creates a good one)
-# See the setup-github-repo.sh for the recommended .gitignore content
+# See the setup/system/setup-github-repo.sh for the recommended .gitignore content
 
 # 4. Add and commit files
 git add .
@@ -130,4 +130,4 @@ Your `~/.gitconfig.local` template is included but won't contain your actual cre
 
 ---
 
-**Ready to proceed? Run: `./setup-github-repo.sh`**
+**Ready to proceed? Run: `./setup/system/setup-github-repo.sh`**
