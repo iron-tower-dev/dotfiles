@@ -31,6 +31,7 @@ return {
       "williamboman/mason.nvim",
       "neovim/nvim-lspconfig",
     },
+    event = { "BufReadPre", "BufNewFile" },
     opts = {
       -- Servers to automatically install via Mason
       ensure_installed = {
@@ -39,16 +40,18 @@ return {
         "angularls",        -- Angular
         "elixirls",         -- Elixir
         "gopls",            -- Go
-        "roslyn",           -- C# (Roslyn)
+        -- Note: roslyn is installed via custom Mason registry
       },
       -- Automatically setup servers installed via Mason
       automatic_installation = true,
     },
     config = function(_, opts)
-      require("mason-lspconfig").setup(opts)
+      local mason_lspconfig = require("mason-lspconfig")
+      mason_lspconfig.setup(opts)
       
       -- Setup handlers for automatic server configuration
-      require("mason-lspconfig").setup_handlers({
+      if mason_lspconfig.setup_handlers then
+        mason_lspconfig.setup_handlers({
         -- Default handler for servers
         function(server_name)
           -- Try to load server-specific configuration
@@ -97,7 +100,16 @@ return {
             end
           end
         end,
-      })
+        })
+        
+        -- Manual setup for Roslyn (from custom registry)
+        local roslyn_ok, roslyn_config = pcall(require, "lsp.servers.roslyn")
+        if roslyn_ok and roslyn_config then
+          require("lspconfig").roslyn.setup(roslyn_config)
+        end
+      else
+        vim.notify("mason-lspconfig.setup_handlers not available", vim.log.levels.ERROR)
+      end
     end,
   },
 
