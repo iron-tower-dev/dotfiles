@@ -54,9 +54,25 @@ check_nixos() {
 check_flakes() {
     log_info "Checking if Nix flakes are enabled..."
     
-    if ! nix --version | grep -q "flakes"; then
+    # Test flakes support by running a flake subcommand
+    if ! nix flake --help >/dev/null 2>&1; then
         log_warning "Nix flakes support not detected. Adding temporarily..."
-        export NIX_CONFIG="experimental-features = nix-command flakes"
+        
+        # Get current NIX_CONFIG or initialize empty
+        local current_config="${NIX_CONFIG:-}"
+        local flake_features="experimental-features = nix-command flakes"
+        
+        # Append flake features if not already present
+        if [[ -z "$current_config" ]]; then
+            export NIX_CONFIG="$flake_features"
+        elif [[ "$current_config" != *"experimental-features"* ]]; then
+            export NIX_CONFIG="$current_config $flake_features"
+        elif [[ "$current_config" != *"flakes"* ]]; then
+            # experimental-features exists but doesn't include flakes
+            export NIX_CONFIG="${current_config/experimental-features =/experimental-features = nix-command flakes}"
+        fi
+        
+        log_info "Updated NIX_CONFIG: $NIX_CONFIG"
     fi
     
     log_success "Nix flakes are available"
