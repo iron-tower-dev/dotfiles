@@ -5,6 +5,7 @@ experimental = true
 quiet = false
 
 [tools]
+usage = "latest"
 uv = "latest"
 
 # Start with no global tools - install as needed

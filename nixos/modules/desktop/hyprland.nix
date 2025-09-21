@@ -85,8 +85,8 @@ in
 
     # Enable required services
     services = {
-      # Display manager - will be configured in sddm.nix
-      displayManager.enable = true;
+      # SDDM display manager - additional configuration in sddm.nix
+      sddm.enable = true;
       
       # Audio
       pipewire = {
