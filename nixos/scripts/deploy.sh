@@ -99,7 +99,7 @@ deploy_system() {
     fi
     
     log_info "Building NixOS configuration..."
-    if sudo nixos-rebuild switch --flake ".#${hostname}"; then
+    if sudo --preserve-env=NIX_CONFIG,NIX_PATH,XDG_CONFIG_HOME nixos-rebuild switch --flake ".#${hostname}"; then
         log_success "NixOS system deployed successfully"
     else
         log_error "NixOS system deployment failed"
