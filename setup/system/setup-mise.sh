@@ -42,7 +42,7 @@ eval "$(mise activate bash)"
 
 # Install required plugins first
 log_info "Installing mise plugins..."
-local plugins=("node" "python" "go" "rust" "java" "elixir" "erlang" "clojure" "dotnet" "kotlin" "bun" "deno" "zig" "terraform" "kubectl" "helm" "uv")
+plugins=("node" "python" "go" "rust" "java" "elixir" "erlang" "clojure" "dotnet" "kotlin" "bun" "deno" "zig" "terraform" "kubectl" "helm" "uv")
 for plugin in "${plugins[@]}"; do
     if ! mise plugins list | grep -q "^$plugin$"; then
         log_info "Installing plugin: $plugin"
@@ -56,7 +56,7 @@ mise install || {
     log_warning "Batch install failed. Installing individual tools..."
     
     # Core languages for LSP servers
-    local core_tools=(
+    core_tools=(
         "node@lts"          # TypeScript/Angular/JavaScript LSP (ts_ls, angularls)
         "python@3.12"       # Python development and tooling
         "go@latest"         # Go LSP (gopls)
@@ -70,7 +70,7 @@ mise install || {
     )
     
     # Additional development tools
-    local additional_tools=(
+    additional_tools=(
         "bun@latest"        # Alternative Node.js runtime
         "deno@latest"       # Alternative TypeScript runtime
         "zig@latest"        # Systems programming
@@ -172,7 +172,7 @@ if command -v uv &> /dev/null; then
     log_info "Installing Python language servers and tools using uv..."
     
     # Install development tools globally with uv tool
-    local python_tools=(
+    python_tools=(
         "python-lsp-server"     # Python LSP server
         "ruff"                  # Fast Python linter and formatter  
         "mypy"                  # Static type checker

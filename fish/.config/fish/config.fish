@@ -14,17 +14,23 @@ set -gx XDG_DATA_HOME ~/.local/share
 set -gx XDG_CACHE_HOME ~/.cache
 set -gx XDG_STATE_HOME ~/.local/state
 
-# Path modifications
-fish_add_path ~/.local/bin
-fish_add_path ~/.cargo/bin
-fish_add_path ~/bin
+# Path modifications (only add if not already present)
+if not contains ~/.local/bin $fish_user_paths
+    fish_add_path ~/.local/bin
+end
+if not contains ~/.cargo/bin $fish_user_paths
+    fish_add_path ~/.cargo/bin
+end
+if not contains ~/bin $fish_user_paths; and test -d ~/bin
+    fish_add_path ~/bin
+end
 
 # Wayland/Hyprland environment variables
 set -gx XDG_CURRENT_DESKTOP Hyprland
 set -gx XDG_SESSION_TYPE wayland
 set -gx XDG_SESSION_DESKTOP Hyprland
 set -gx GDK_BACKEND wayland,x11
-set -gx QT_QPA_PLATFORM wayland;xcb
+# set -gx QT_QPA_PLATFORM wayland;xcb
 set -gx SDL_VIDEODRIVER wayland
 set -gx CLUTTER_BACKEND wayland
 set -gx QT_WAYLAND_DISABLE_WINDOWDECORATION 1
@@ -82,14 +88,15 @@ alias gl='git log --oneline --graph --decorate'
 alias gb='git branch'
 alias gco='git checkout'
 
-# System aliases
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
+# System aliases (only define if exa is not available)
+if not command -v exa >/dev/null 2>&1
+    alias ll='ls -alF'
+    alias la='ls -A'
+    alias l='ls -CF'
+end
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
-alias ~='cd ~'
 alias c='clear'
 alias h='history'
 alias j='jobs -l'
@@ -221,9 +228,29 @@ end
 # Initialize fish vi mode (optional, comment out if you prefer emacs mode)
 # fish_vi_key_bindings
 
-# Source any additional config files
-for file in ~/.config/fish/conf.d/*.fish
-    if test -r $file
-        source $file
+# Source any additional config files (skip if they exit for non-interactive shells)
+if status is-interactive
+    for file in ~/.config/fish/conf.d/*.fish
+        if test -r $file
+            source $file
+        end
     end
+else
+    # Load only safe config files that don't exit in non-interactive mode
+    for file in ~/.config/fish/conf.d/{catppuccin_theme,abbr_tips}.fish
+        if test -r $file
+            source $file
+        end
+    end
+end
+
+# uv (only add if not already present)
+if not contains "$HOME/.local/bin" $fish_user_paths
+    fish_add_path "$HOME/.local/bin"
+end
+
+# Auto-start SSH agent
+if not pgrep -x ssh-agent > /dev/null
+    eval (ssh-agent -c)
+    ssh-add /home/derrick/.ssh/id_ed25519
 end

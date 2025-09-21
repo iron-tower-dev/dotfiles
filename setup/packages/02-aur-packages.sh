@@ -110,8 +110,8 @@ fi
 # Ask about optional packages
 echo
 log_info "Optional packages available:"
-for i, package in "${!OPTIONAL_PACKAGES[@]}"; do
-    echo "  $((i+1)). ${package}"
+for i in "${!OPTIONAL_PACKAGES[@]}"; do
+    echo "  $((i+1)). ${OPTIONAL_PACKAGES[i]}"
 done
 
 echo

@@ -69,7 +69,6 @@ WAYLAND_PACKAGES=(
     "thunar-volman"        # Volume management for Thunar
     "gvfs"                 # Virtual filesystem
     "tumbler"              # Thumbnail generator
-    "waypaper"             # Wallpaper manager
     "hypridle"             # Idle daemon
     "hyprlock"             # Screen locker
 )
