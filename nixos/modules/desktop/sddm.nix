@@ -100,20 +100,14 @@ in
       };
     };
 
-    # Install Catppuccin SDDM theme
+    # Install SDDM dependencies and theme
     environment.systemPackages = with pkgs; [
-      # SDDM and dependencies
+      # SDDM Qt dependencies
       libsForQt5.qt5.qtquickcontrols2
       libsForQt5.qt5.qtgraphicaleffects
       
-      # Catppuccin theme (we'll use a simpler approach for now)
-      (pkgs.fetchFromGitHub {
-        owner = "catppuccin";
-        repo = "sddm";
-        rev = "v1.1.2";
-        sha256 = "sha256-Y7c2YN8tU8eUdJLvdZo/fPzdOQGRaXWb1W4Gk1nIBdE=";
-        name = "catppuccin-sddm-source";
-      })
+      # Use packaged Catppuccin SDDM theme
+      catppuccin-sddm
     ];
 
     # Create symlink for the theme
