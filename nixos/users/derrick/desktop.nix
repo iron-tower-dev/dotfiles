@@ -62,9 +62,10 @@
       window-format = "{w} · {c} · {t}";
     };
   };
+  };
 
   # Link Rofi configuration from dotfiles if it exists
-  home.file.".config/rofi" = lib.mkIf (builtins.pathExists ../../../rofi) {
+  home.file.".config/rofi" = lib.mkIf (builtins.pathExists "${config.home.homeDirectory}/dotfiles/rofi") {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/rofi/.config/rofi";
     recursive = true;
   };
@@ -79,7 +80,7 @@
   };
 
   # Link Alacritty configuration from dotfiles if it exists
-  home.file.".config/alacritty" = lib.mkIf (builtins.pathExists ../../../alacritty) {
+  home.file.".config/alacritty" = lib.mkIf (builtins.pathExists "${config.home.homeDirectory}/dotfiles/alacritty") {
     source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotfiles/alacritty/.config/alacritty";
     recursive = true;
   };
