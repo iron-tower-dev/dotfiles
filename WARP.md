@@ -140,6 +140,30 @@ git sl                       # List stashes
 git sp                       # Pop stash
 ```
 
+### SSH and GitHub CLI Configuration
+```bash
+# Setup Git and GitHub CLI with SSH (automated)
+./setup/system/setup-git.sh        # Configure Git + SSH keys + GitHub CLI
+
+# Manual SSH setup
+ssh-keygen -t ed25519 -C "email@example.com"  # Generate SSH key
+eval $(ssh-agent -c) && ssh-add ~/.ssh/id_ed25519  # Add to agent
+ssh -T git@github.com               # Test GitHub connection
+
+# GitHub CLI configuration
+gh auth login --git-protocol ssh --web  # Authenticate with SSH protocol
+gh config set git_protocol ssh     # Configure CLI to use SSH
+gh config get git_protocol          # Verify SSH protocol setting
+
+# Git configuration for SSH
+git config --global hub.protocol ssh      # Configure hub to use SSH
+git remote set-url origin git@github.com:user/repo.git  # Switch remote to SSH
+
+# Repository management
+gh repo create my-repo --public --clone  # Create and clone with SSH
+gh repo clone user/repo                   # Clone existing repo with SSH
+```
+
 ### System Management
 ```bash
 # Service management

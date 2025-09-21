@@ -172,3 +172,5 @@
 # Include user-specific configurations
 [include]
 	path = ~/.gitconfig.local
+[credential]
+	helper = store

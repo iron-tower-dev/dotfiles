@@ -85,14 +85,23 @@ authenticate_github() {
     
     if gh auth status &> /dev/null; then
         log_success "Already authenticated with GitHub CLI"
+        
+        # Ensure GitHub CLI is configured to use SSH protocol
+        gh config set git_protocol ssh
+        log_info "Configured GitHub CLI to use SSH protocol"
+        
         return 0
     fi
     
     log_info "Authenticating with GitHub CLI..."
     log_info "Please follow the prompts to authenticate with your GitHub account"
     
-    if gh auth login --protocol ssh --prefer-ssh; then
+    if gh auth login --git-protocol ssh --web; then
         log_success "GitHub CLI authenticated successfully!"
+        
+        # Configure GitHub CLI to use SSH protocol
+        gh config set git_protocol ssh
+        log_info "Configured GitHub CLI to use SSH protocol"
     else
         log_error "GitHub CLI authentication failed"
         log_info "You can continue manually by:"

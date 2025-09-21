@@ -162,6 +162,10 @@ EOF
         log_success "Updated local git config"
     fi
     
+    # Configure SSH protocol preferences
+    git config --global hub.protocol ssh
+    log_info "Configured hub.protocol to use SSH"
+    
     log_success "Git configured successfully"
 }
 
@@ -357,6 +361,10 @@ setup_github_integration() {
         if gh auth status &> /dev/null; then
             log_info "Already authenticated with GitHub CLI"
             
+            # Configure GitHub CLI to use SSH protocol
+            gh config set git_protocol ssh
+            log_info "Configured GitHub CLI to use SSH protocol"
+            
             read -p "Do you want to upload your SSH key to GitHub automatically? (Y/n): " upload_key
             if [[ ! "$upload_key" =~ ^[Nn]$ ]]; then
                 local pub_key_content=$(cat "${SSH_KEY_FILE}.pub")
@@ -376,8 +384,12 @@ setup_github_integration() {
             read -p "Do you want to authenticate now? (Y/n): " auth_now
             if [[ ! "$auth_now" =~ ^[Nn]$ ]]; then
                 log_info "Starting GitHub CLI authentication..."
-                if gh auth login --protocol ssh --prefer-ssh; then
+                if gh auth login --git-protocol ssh --web; then
                     log_success "GitHub CLI authenticated successfully!"
+                    
+                    # Configure GitHub CLI to use SSH protocol
+                    gh config set git_protocol ssh
+                    log_info "Configured GitHub CLI to use SSH protocol"
                     
                     # Upload SSH key
                     local key_title="$(hostname)-$(date +%Y%m%d)"
