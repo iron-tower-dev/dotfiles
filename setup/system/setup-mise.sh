@@ -184,6 +184,27 @@ if command -v uv &> /dev/null; then
         "python-lsp-ruff"       # Ruff plugin for python-lsp-server
     )
     
+    # Install AUR build dependencies to mise Python environment
+    log_info "Installing Python build dependencies for AUR packages..."
+    python_build_deps=(
+        "installer"             # Python package installer (for AUR builds)
+        "poetry"                # Modern Python packaging (for AUR builds)
+        "build"                 # Python build frontend
+        "setuptools"            # Python packaging utilities
+        "wheel"                 # Python wheel support
+    )
+    
+    # Install build dependencies using pip (they're needed for AUR package building)
+    if command -v pip &> /dev/null; then
+        for dep in "${python_build_deps[@]}"; do
+            log_info "Installing Python build dependency: $dep"
+            pip install "$dep" 2>/dev/null || log_warning "Failed to install build dependency: $dep"
+        done
+        log_success "Python build dependencies installed with pip"
+    else
+        log_warning "pip not found. Build dependencies may be needed for AUR packages."
+    fi
+    
     for tool in "${python_tools[@]}"; do
         log_info "Installing Python tool: $tool"
         uv tool install "$tool" 2>/dev/null || log_warning "Failed to install: $tool"
@@ -191,7 +212,19 @@ if command -v uv &> /dev/null; then
     
     log_success "Python tools installed with uv"
 else
-    log_warning "uv not found. Install uv first: 'mise install uv@latest'"
+    # Fallback: install build dependencies even without uv
+    if command -v pip &> /dev/null; then
+        log_info "Installing essential Python build dependencies for AUR packages..."
+        essential_build_deps=("installer" "poetry" "build" "setuptools" "wheel")
+        for dep in "${essential_build_deps[@]}"; do
+            log_info "Installing Python build dependency: $dep"
+            pip install "$dep" 2>/dev/null || log_warning "Failed to install build dependency: $dep"
+        done
+        log_success "Essential Python build dependencies installed"
+    else
+        log_warning "Neither uv nor pip found. Install Python tools first: 'mise install python@3.12'"
+        log_warning "Python build dependencies may be needed for AUR packages."
+    fi
 fi
 
 # Install Go language servers and tools

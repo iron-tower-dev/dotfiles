@@ -92,6 +92,10 @@ Before deployment, you may want to customize:
 - **Oh My Posh**: Cross-shell prompt with Git integration and transient prompts
 - **Git**: Enhanced configuration with 50+ aliases and delta integration
 - **Development Tools**: Modern CLI replacements (bat, eza, ripgrep, etc.)
+- **Python Build Environment**: Complete Python development setup with build dependencies
+  - Poetry, pip, setuptools, wheel, build tools
+  - PyGObject3, cairo, pillow for GUI applications
+  - Equivalent to Arch Linux python-* packages for AUR-like functionality
 
 ### Theming
 - **Catppuccin Macchiato**: Consistent theming across all applications
@@ -323,6 +327,39 @@ nix search nixpkgs package-name
 # Check if package exists in current channel
 nix-env -qaP | grep package-name
 ```
+
+#### Python Development Issues
+
+The NixOS configuration includes comprehensive Python build dependencies equivalent to Arch Linux's python-* packages:
+
+```bash
+# Check Python environment
+python --version
+which python
+
+# Test build dependencies
+python -c "import setuptools, wheel, build, installer, poetry; print('Build deps OK')"
+
+# Test GUI dependencies (for waypaper-like applications)
+python -c "import gi, cairo, PIL; print('GUI deps OK')"
+
+# Enable Python development module if not enabled
+# In your host configuration:
+# programs.python-development.enable = true;
+
+# Check available Python packages
+nix search nixpkgs python3Packages
+
+# Install Python package for user
+nix profile install nixpkgs#python3Packages.package-name
+```
+
+**Python Build Environment Features:**
+- Complete build toolchain (poetry, setuptools, wheel, build, installer)
+- GUI development support (PyGObject3, cairo, pillow)
+- Development tools (black, isort, flake8, mypy, pytest)
+- Environment isolation via nix-direnv
+- Equivalent functionality to Arch Linux AUR Python builds
 
 ### System Recovery
 

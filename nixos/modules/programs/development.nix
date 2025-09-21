@@ -26,6 +26,16 @@ in
       gnumake
       cmake
       
+      # Python build dependencies (essential for AUR-like package building)
+      python3
+      python3Packages.pip
+      python3Packages.setuptools
+      python3Packages.wheel
+      python3Packages.build
+      python3Packages.installer
+      python3Packages.poetry-core
+      python3Packages.poetry
+      
       # System tools
       curl
       wget

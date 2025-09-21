@@ -55,7 +55,7 @@ stow -D -t ~ hyprland        # Remove Hyprland config
 stow -R -t ~ hyprland        # Restow Hyprland config
 
 # Deploy all configurations
-cd ~/dotfiles && for pkg in hyprland waybar alacritty rofi fish nushell starship mise zsh git neovim themes; do [[ -d "$pkg" ]] && stow -t ~ "$pkg"; done
+cd ~/dotfiles && for pkg in hyprland waybar alacritty rofi fish nushell starship mise zsh git neovim themes dunst; do [[ -d "$pkg" ]] && stow -t ~ "$pkg"; done
 ```
 
 ### Neovim Configuration Management
@@ -164,6 +164,28 @@ sudo systemctl restart display-manager     # Restart display manager
 # Theme verification
 ls /usr/share/sddm/themes/        # List installed themes
 sudo journalctl -u sddm.service   # Check SDDM logs
+```
+
+### Dunst Notification Configuration
+```bash
+# Deploy dunst configuration
+stow -t ~ dunst                 # Deploy dunst config
+pkill dunst && dunst &          # Restart dunst with new config
+
+# Test notifications with different urgency levels
+notify-send "Test Notification" "Normal notification with blue accent"
+notify-send -u low "Low Priority" "Subtle notification with gray frame"
+notify-send -u critical "Critical Alert" "Red notification that stays visible"
+
+# Dunst control commands (for window manager keybindings)
+dunstctl close                  # Close current notification
+dunstctl close-all              # Close all notifications
+dunstctl history-pop            # Show notification history
+dunstctl context                # Show context menu
+
+# Check dunst status
+pgrep -fl dunst                 # Check if dunst is running
+dunst -conf ~/.config/dunst/dunstrc -print  # Test configuration
 ```
 
 ### SSH and GitHub CLI Configuration
@@ -296,6 +318,7 @@ dotfiles/
 ├── mise/                    # Programming language version manager
 ├── neovim/                  # Neovim configuration
 │   └── .config/nvim/        # Complete Neovim setup with lazy.nvim
+├── dunst/                   # Dunst notification daemon configuration
 ├── sddm/                    # SDDM display manager configuration
 └── themes/                  # GTK/Qt theme configurations
 ```
@@ -334,6 +357,25 @@ mise doctor                  # Check configuration
 # Fix path issues
 export PATH="$HOME/.local/share/mise/shims:$PATH"
 mise reshim                  # Regenerate shims
+```
+
+### Python Build Dependencies (AUR Packages)
+```bash
+# Fix AUR build failures with Python dependencies
+./bootstrap.sh --python-deps
+
+# Test Python build environment
+python -c "import installer, poetry.core.masonry.api; print('Build deps OK')"
+
+# Check system vs mise Python
+which python                 # Should show mise Python if available
+/usr/bin/python3 -c "import gi; print('System Python OK')"  # Test system packages
+
+# Manually install build deps to mise Python
+pip install installer poetry poetry-core build setuptools wheel
+
+# Clean AUR build cache if issues persist
+paru -Sc --noconfirm
 ```
 
 ### Hyprland/Waybar Issues

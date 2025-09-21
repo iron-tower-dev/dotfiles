@@ -48,10 +48,17 @@
     };
     
     waybar.enable = true;
+    
+    # Enable desktop packages including AUR equivalents
+    packages = {
+      enable = true;
+      includeAurEquivalents = true;
+    };
   };
 
   programs = {
     development.enable = true;
+    python-development.enable = true;  # Enable Python build dependencies
     shells.enable = true;
   };
 

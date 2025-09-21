@@ -62,6 +62,15 @@ CORE_PACKAGES=(
     "zellij"               # Modern terminal multiplexer
 )
 
+# Python build dependencies (needed for AUR packages)
+PYTHON_BUILD_PACKAGES=(
+    "python-poetry"         # Modern Python packaging and dependency management
+    "python-installer"      # Python package installer
+    "python-build"          # Python build frontend
+    "python-setuptools"     # Python packaging utilities
+    "python-wheel"          # Python wheel support
+)
+
 # Wayland/Hyprland specific packages
 WAYLAND_PACKAGES=(
     "hyprland"             # Wayland compositor
@@ -107,6 +116,7 @@ FONT_PACKAGES=(
 # Combine all package arrays
 ALL_PACKAGES=(
     "${CORE_PACKAGES[@]}"
+    "${PYTHON_BUILD_PACKAGES[@]}"
     "${WAYLAND_PACKAGES[@]}"
     "${AUDIO_PACKAGES[@]}"
     "${NETWORK_PACKAGES[@]}"
@@ -133,6 +143,9 @@ sudo pacman -Syu --noconfirm
 # Install packages in groups for better error handling
 log_info "Installing core packages..."
 install_packages "${CORE_PACKAGES[@]}"
+
+log_info "Installing Python build dependencies..."
+install_packages "${PYTHON_BUILD_PACKAGES[@]}"
 
 log_info "Installing Wayland/Hyprland packages..."
 install_packages "${WAYLAND_PACKAGES[@]}"

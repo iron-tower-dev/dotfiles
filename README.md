@@ -280,6 +280,19 @@ The setup uses Catppuccin Macchiato by default. To change variants:
 - Check internet connection for package downloads
 - Run with `bash -x bootstrap.sh` for verbose output
 
+### AUR Package Build Failures
+If you encounter Python-related AUR build failures (like `Cannot import 'poetry.core.masonry.api'`):
+
+```bash
+# Fix Python build dependencies
+./bootstrap.sh --python-deps
+
+# Then retry AUR packages
+./bootstrap.sh --packages
+```
+
+This issue is automatically prevented in fresh installations, but may occur on existing systems with incomplete Python environments.
+
 ### Theme Not Applied
 - Restart applications after installation
 - For Qt apps, ensure environment variables are set

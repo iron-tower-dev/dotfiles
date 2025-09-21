@@ -6,6 +6,7 @@
     # Import Home Manager modules
     ./desktop.nix
     ./programs.nix
+    ./python.nix
     ./services.nix
     ./themes.nix
   ];

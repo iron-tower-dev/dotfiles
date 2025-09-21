@@ -68,6 +68,14 @@ install_packages() {
         exit 1
     fi
     
+    # Setup Python build dependencies before AUR packages
+    if [[ -f "$SETUP_DIR/system/setup-python-build-deps.sh" ]]; then
+        log_info "Setting up Python build dependencies for AUR packages..."
+        bash "$SETUP_DIR/system/setup-python-build-deps.sh"
+    else
+        log_warning "Python build dependencies script not found, AUR packages may fail..."
+    fi
+    
     if [[ -f "$SETUP_DIR/packages/02-aur-packages.sh" ]]; then
         log_info "Installing AUR packages..."
         bash "$SETUP_DIR/packages/02-aur-packages.sh"
@@ -221,10 +229,11 @@ interactive_menu() {
     echo "6. Setup git only"
     echo "7. Setup SDDM only"
     echo "8. Setup Zsh shell only"
-    echo "9. Exit"
+    echo "9. Setup Python build dependencies only"
+    echo "10. Exit"
     echo
     
-    read -p "Choose an option (1-9): " choice
+    read -p "Choose an option (1-10): " choice
     
     case $choice in
         1)
@@ -270,6 +279,13 @@ interactive_menu() {
             fi
             ;;
         9)
+            if [[ -f "$SETUP_DIR/system/setup-python-build-deps.sh" ]]; then
+                bash "$SETUP_DIR/system/setup-python-build-deps.sh"
+            else
+                log_error "Python build dependencies script not found"
+            fi
+            ;;
+        10)
             log_info "Exiting..."
             exit 0
             ;;
@@ -356,6 +372,13 @@ main() {
                     log_error "Zsh setup script not found"
                 fi
                 ;;
+            --python-deps)
+                if [[ -f "$SETUP_DIR/system/setup-python-build-deps.sh" ]]; then
+                    bash "$SETUP_DIR/system/setup-python-build-deps.sh"
+                else
+                    log_error "Python build dependencies script not found"
+                fi
+                ;;
             --help)
                 echo "Usage: $0 [option]"
                 echo "Options:"
@@ -367,6 +390,7 @@ main() {
                 echo "  --git       : Setup git only"
                 echo "  --sddm      : Setup SDDM display manager only"
                 echo "  --zsh       : Setup Zsh shell only"
+                echo "  --python-deps : Setup Python build dependencies only"
                 echo "  --help      : Show this help"
                 exit 0
                 ;;

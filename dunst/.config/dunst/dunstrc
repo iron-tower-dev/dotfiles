@@ -1,0 +1,117 @@
+# Catppuccin Macchiato theme for Dunst notifications
+# Based on dotfiles system theme
+
+[global]
+    ### Display ###
+    monitor = 0
+    follow = none
+
+    ### Geometry ###
+    width = 300
+    height = (0, 300)
+    origin = top-right
+    offset = (10, 50)
+    scale = 0
+    notification_limit = 0
+
+    ### Progress bar ###
+    progress_bar = true
+    progress_bar_height = 10
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+
+    ### Text ###
+    font = JetBrains Mono 11
+    line_height = 0
+    markup = full
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    vertical_alignment = center
+    show_age_threshold = 60
+    ellipsize = middle
+    ignore_newline = no
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+
+    ### Icons ###
+    icon_position = left
+    min_icon_size = 0
+    max_icon_size = 32
+    icon_path = /usr/share/icons/Papirus:/usr/share/icons/Papirus-Dark:/usr/share/icons/hicolor/scalable/apps
+
+    ### History ###
+    sticky_history = yes
+    history_length = 20
+
+    ### Misc/Advanced ###
+    dmenu = /usr/bin/rofi -dmenu -p dunst:
+    browser = /usr/bin/xdg-open
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+    corner_radius = 12
+    ignore_dbusclose = false
+    force_xwayland = false
+    force_xinerama = false
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+
+# Catppuccin Macchiato Color Scheme
+[urgency_low]
+    background = "#24273a"
+    foreground = "#cad3f5"
+    highlight = "#8aadf4"
+    frame_color = "#363a4f"
+    timeout = 5
+
+[urgency_normal]
+    background = "#24273a"
+    foreground = "#cad3f5"
+    highlight = "#8aadf4"
+    frame_color = "#8aadf4"
+    timeout = 10
+
+[urgency_critical]
+    background = "#24273a"
+    foreground = "#cad3f5"
+    highlight = "#ed8796"
+    frame_color = "#ed8796"
+    timeout = 0
+
+# Application-specific rules
+[spotify]
+    appname = "Spotify"
+    background = "#24273a"
+    foreground = "#a6da95"
+    frame_color = "#a6da95"
+    timeout = 5
+
+[discord]
+    appname = "discord"
+    background = "#24273a"
+    foreground = "#b7bdf8"
+    frame_color = "#b7bdf8"
+    timeout = 5
+
+[volume]
+    appname = "changeVolume"
+    background = "#24273a"
+    foreground = "#eed49f"
+    frame_color = "#eed49f"
+    timeout = 2
+
+[brightness]
+    appname = "changeBrightness"
+    background = "#24273a"
+    foreground = "#f5a97f"
+    frame_color = "#f5a97f"
+    timeout = 2
+
+# Keybindings (use dunstctl commands in your window manager instead)
+# close = dunstctl close
+# close_all = dunstctl close-all
+# history = dunstctl history-pop
+# context = dunstctl context

@@ -102,6 +102,8 @@ AUR_HELPER=$(get_aur_helper)
 log_info "Using AUR helper: $AUR_HELPER"
 
 # Install essential AUR packages
+# Note: Python build dependencies are installed by the core packages script
+# and mise setup script to prevent build failures with Python-based AUR packages
 log_info "Installing essential AUR packages..."
 if $AUR_HELPER -S --needed --noconfirm "${AUR_PACKAGES[@]}"; then
     log_success "Essential AUR packages installed successfully"

@@ -1,7 +1,8 @@
 {
   imports = [
     ./hyprland.nix
-    ./waybar.nix
+    ./packages.nix
     ./sddm.nix
+    ./waybar.nix
   ];
 }
