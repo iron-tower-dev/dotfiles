@@ -16,6 +16,7 @@ This is a complete Arch Linux desktop environment setup featuring Hyprland (Wayl
 ### Package Management Philosophy
 - **Mise**: Modern tool version manager (replaces asdf) for programming languages
 - **Pacman + AUR**: System package management via scripts
+- **UV**: Fast Python package installer and resolver (ALWAYS use instead of pip/pipx)
 - **Layered Installation**: Core packages → AUR packages → Themes → System configuration → Dotfiles
 
 ### Key Components
@@ -111,6 +112,32 @@ mise global python@3.12      # Set global Python version
 mise upgrade                 # Update all tools
 mise prune                   # Clean unused versions
 mise doctor                  # Check configuration
+```
+
+### Python Package Management (UV)
+```bash
+# Install Python packages globally (using system Python)
+uv tool install waypaper --python /usr/bin/python3  # Install GUI apps with system Python for gi access
+uv tool install black --python /usr/bin/python3     # Install dev tools globally
+uv tool list                                         # List globally installed tools
+
+# Project-specific Python environment management
+uv venv                                              # Create virtual environment
+uv pip install package-name                         # Install packages in current venv
+uv pip install -r requirements.txt                  # Install from requirements file
+uv pip freeze                                        # List installed packages
+
+# Fast package resolution and installation
+uv add package-name                                  # Add package to project
+uv remove package-name                               # Remove package from project
+uv sync                                              # Sync environment with project dependencies
+
+# Environment management
+uv venv --python 3.12                               # Create venv with specific Python version
+source .venv/bin/activate                            # Activate virtual environment (bash/zsh)
+source .venv/bin/activate.fish                       # Activate virtual environment (fish)
+
+# NEVER use pip or pipx - ALWAYS use uv for Python package management
 ```
 
 ### Git Workflow (Enhanced Configuration)
@@ -328,6 +355,13 @@ dotfiles/
 ### Mise Package Manager Priority
 Based on user rules, this repository prioritizes the Mise package manager for programming language and tool version management. Always use Mise commands when working with Node.js, Python, Go, Rust, and other development tools rather than system package managers.
 
+### UV Python Package Management
+**CRITICAL**: NEVER use pip, pipx, or any other Python package managers. ALWAYS use uv for all Python package management tasks:
+- Use `uv tool install` for global CLI tools (with system Python when GUI dependencies are needed)
+- Use `uv pip install` for packages within virtual environments
+- Use `uv venv` for creating virtual environments
+- Use `uv add`/`uv remove` for project dependency management
+
 ### Angular Development Standards  
 When working on Angular projects within this environment, follow modern Angular practices:
 - Use input/output signals instead of legacy TypeScript decorators
@@ -372,7 +406,7 @@ which python                 # Should show mise Python if available
 /usr/bin/python3 -c "import gi; print('System Python OK')"  # Test system packages
 
 # Manually install build deps to mise Python
-pip install installer poetry poetry-core build setuptools wheel
+uv pip install installer poetry poetry-core build setuptools wheel
 
 # Clean AUR build cache if issues persist
 paru -Sc --noconfirm
