@@ -5,6 +5,7 @@ experimental = true
 quiet = false
 
 [tools]
+clojure = "latest"
 dotnet = "latest"
 java = "25.0.0"
 leiningen = "latest"

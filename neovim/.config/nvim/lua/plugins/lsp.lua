@@ -42,6 +42,7 @@ return {
         "elixirls",         -- Elixir
         "gopls",            -- Go
         "omnisharp",        -- C#
+        "clojure_lsp",      -- Clojure
       },
       -- Automatically setup servers installed via Mason
       automatic_installation = true,

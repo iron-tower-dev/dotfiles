@@ -67,6 +67,7 @@ local format_filetypes = {
   "javascriptreact",
   "elixir",
   "cs",
+  "clojure",
 }
 
 vim.api.nvim_create_autocmd("BufWritePre", {
@@ -126,20 +127,8 @@ vim.api.nvim_create_autocmd({ "InsertLeave" }, {
   end,
 })
 
--- LSP progress indicator using fidget.nvim
-vim.api.nvim_create_autocmd("LspProgress", {
-  group = vim.api.nvim_create_augroup("LspProgress", { clear = true }),
-  callback = function(args)
-    local client = vim.lsp.get_client_by_id(args.data.client_id)
-    if not client then return end
-    
-    -- Let fidget.nvim handle the progress display
-    local fidget = package.loaded["fidget"]
-    if fidget then
-      fidget.progress.handle(args.data)
-    end
-  end,
-})
+-- Note: fidget.nvim handles LSP progress automatically when loaded
+-- No manual progress handling needed
 
 -- Auto-install language servers when opening supported files
 local auto_install_group = vim.api.nvim_create_augroup("LspAutoInstall", { clear = true })
@@ -154,6 +143,9 @@ local filetype_to_server = {
   elixir = "elixirls",
   go = "gopls",
   cs = "omnisharp",
+  clojure = "clojure_lsp",
+  clojurescript = "clojure_lsp",
+  clojurec = "clojure_lsp",
 }
 
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {

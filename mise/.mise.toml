@@ -7,6 +7,7 @@ node = "22.19.0"   # Latest LTS version for Angular CLI compatibility
 # python = "3.12.1"  # Use system Python instead of mise
 go = "1.21.5"      # Latest stable Go
 rust = "1.75.0"    # Latest stable Rust
+clojure = "latest"
 
 # Frontend/JS ecosystem
 # bun = "latest"     # Alternative JS runtime

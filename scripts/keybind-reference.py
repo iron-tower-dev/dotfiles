@@ -251,21 +251,49 @@ class KeybindingReference:
                 {'key': '<leader>kv', 'action': 'Extract Variable', 'category': 'Kotlin Development'},
                 {'key': '<leader>kd', 'action': 'Generate KDoc', 'category': 'Kotlin Development'},
                 
-                # Clojure-specific keybinds (clojure_lsp)
-                {'key': '<leader>rj', 'action': 'Start Lein REPL', 'category': 'Clojure REPL'},
-                {'key': '<leader>rJ', 'action': 'Start Clj REPL', 'category': 'Clojure REPL'},
-                {'key': '<leader>rc', 'action': 'Connect to REPL', 'category': 'Clojure REPL'},
-                {'key': '<leader>re', 'action': 'Evaluate Expression', 'category': 'Clojure REPL'},
-                {'key': '<leader>rb', 'action': 'Evaluate Buffer', 'category': 'Clojure REPL'},
-                {'key': '<leader>cn', 'action': 'Clean Namespace', 'category': 'Clojure Development'},
-                {'key': '<leader>ca', 'action': 'Add Missing Import', 'category': 'Clojure Development'},
-                {'key': '<leader>tt', 'action': 'Run Namespace Tests', 'category': 'Clojure Development'},
-                {'key': '<leader>ta', 'action': 'Run All Tests', 'category': 'Clojure Development'},
-                {'key': '<leader>cd', 'action': 'Show ClojureDocs', 'category': 'Clojure Development'},
-                {'key': '<leader>cf', 'action': 'Extract Function', 'category': 'Clojure Development'},
-                {'key': '<leader>ci', 'action': 'Introduce Let', 'category': 'Clojure Development'},
-                {'key': '<leader>c-', 'action': 'Thread First', 'category': 'Clojure Development'},
-                {'key': '<leader>c=', 'action': 'Thread Last', 'category': 'Clojure Development'},
+                # Clojure-specific keybinds (Conjure REPL - j for "jack-in")
+                {'key': '<leader>jj', 'action': 'Jack-in to REPL', 'category': 'Clojure REPL'},
+                {'key': '<leader>jJ', 'action': 'Select REPL (Shadow CLJS)', 'category': 'Clojure REPL'},
+                {'key': '<leader>jc', 'action': 'Connect to port', 'category': 'Clojure REPL'},
+                {'key': '<leader>jp', 'action': 'Connect to host/port', 'category': 'Clojure REPL'},
+                {'key': '<leader>jd', 'action': 'Disconnect from REPL', 'category': 'Clojure REPL'},
+                {'key': '<leader>jq', 'action': 'Close session', 'category': 'Clojure REPL'},
+                {'key': '<leader>jQ', 'action': 'Close all sessions', 'category': 'Clojure REPL'},
+                {'key': '<leader>jl', 'action': 'List sessions', 'category': 'Clojure REPL'},
+                {'key': '<leader>js', 'action': 'Assume session', 'category': 'Clojure REPL'},
+                {'key': '<leader>jS', 'action': 'Assume session (prompt)', 'category': 'Clojure REPL'},
+                {'key': '<leader>jR', 'action': 'Refresh all changed namespaces', 'category': 'Clojure REPL'},
+                {'key': '<leader>jr', 'action': 'Refresh current namespace', 'category': 'Clojure REPL'},
+                
+                # Clojure evaluation keybinds
+                {'key': '<leader>ee', 'action': 'Evaluate current form', 'category': 'Clojure Evaluation'},
+                {'key': '<leader>ee (visual)', 'action': 'Evaluate selection', 'category': 'Clojure Evaluation'},
+                {'key': '<leader>er', 'action': 'Evaluate root form', 'category': 'Clojure Evaluation'},
+                {'key': '<leader>ew', 'action': 'Evaluate word under cursor', 'category': 'Clojure Evaluation'},
+                {'key': '<leader>eb', 'action': 'Evaluate buffer', 'category': 'Clojure Evaluation'},
+                {'key': '<leader>ef', 'action': 'Evaluate file from disk', 'category': 'Clojure Evaluation'},
+                {'key': '<leader>em', 'action': 'Evaluate form at mark', 'category': 'Clojure Evaluation'},
+                {'key': '<leader>e!', 'action': 'Evaluate and replace form', 'category': 'Clojure Evaluation'},
+                
+                # Clojure development keybinds
+                {'key': '<leader>cd', 'action': 'Show documentation', 'category': 'Clojure Development'},
+                {'key': 'K', 'action': 'Show documentation (hover)', 'category': 'Clojure Development'},
+                {'key': '<leader>gd', 'action': 'Go to definition', 'category': 'Clojure Development'},
+                {'key': 'gd', 'action': 'Go to definition (direct)', 'category': 'Clojure Development'},
+                {'key': '<leader>vs', 'action': 'View source', 'category': 'Clojure Development'},
+                
+                # Clojure testing keybinds
+                {'key': '<leader>tt', 'action': 'Run test under cursor', 'category': 'Clojure Testing'},
+                {'key': '<leader>tT', 'action': 'Run all tests in namespace', 'category': 'Clojure Testing'},
+                {'key': '<leader>ta', 'action': 'Run all loaded tests', 'category': 'Clojure Testing'},
+                {'key': '<leader>tr', 'action': 'Rerun last test', 'category': 'Clojure Testing'},
+                
+                # Clojure log management
+                {'key': '<leader>lg', 'action': 'Go to log buffer', 'category': 'Clojure Log'},
+                {'key': '<leader>ls', 'action': 'Show/hide log', 'category': 'Clojure Log'},
+                {'key': '<leader>lr', 'action': 'Reset log (clear)', 'category': 'Clojure Log'},
+                {'key': '<leader>lv', 'action': 'Toggle log', 'category': 'Clojure Log'},
+                {'key': '<leader>lt', 'action': 'Toggle log HUD', 'category': 'Clojure Log'},
             ]
         except Exception as e:
             print(f"Error loading Neovim LSP keybinds: {e}")

@@ -236,16 +236,38 @@ local config = {
   -- File types for Clojure files
   filetypes = { "clojure", "clojurescript", "clojurec", "fennel" },
 
-  -- Root directory patterns for Clojure projects
+  -- Root directory patterns for Clojure projects with fallback
   root_dir = function(fname)
     local lspconfig = require("lspconfig")
-    return lspconfig.util.root_pattern(
+    local util = lspconfig.util
+    
+    -- First try to find project files
+    local root = util.root_pattern(
       "project.clj",      -- Leiningen
       "deps.edn",         -- Clojure CLI/deps.edn
       "bb.edn",          -- Babashka
       "shadow-cljs.edn",  -- Shadow CLJS
+      "build.boot",      -- Boot
+      ".nrepl-port",     -- Running nREPL
       ".git"
     )(fname)
+    
+    -- If no project root found, use the directory containing the file
+    if not root then
+      root = util.path.dirname(fname)
+      -- Create a minimal deps.edn if it doesn't exist to help LSP
+      local deps_file = root .. "/deps.edn"
+      if vim.fn.filereadable(deps_file) == 0 then
+        -- Only create it if we're in a writable directory
+        if vim.fn.filewritable(root) == 2 then
+          local deps_content = '{:deps {org.clojure/clojure {:mvn/version "1.11.1"}}}'
+          vim.fn.writefile({deps_content}, deps_file)
+          vim.notify("Created minimal deps.edn for LSP support", vim.log.levels.INFO)
+        end
+      end
+    end
+    
+    return root
   end,
 
   -- Commands specific to Clojure

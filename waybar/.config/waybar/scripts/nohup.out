@@ -102,3 +102,10 @@
 ** (waybar:701324): WARNING **: 16:29:56.203: Status Notifier Item with bus name ':1.9' and object path '/org/ayatana/NotificationItem/nm_applet' is already registered
 
 ** (waybar:701324): WARNING **: 16:29:56.238: Status Notifier Item with bus name ':1.84134' and object path '/org/ayatana/NotificationItem/steam' is already registered
+
+** (waybar:701324): WARNING **: 16:46:28.241: Status Notifier Item with bus name ':1.9' and object path '/org/ayatana/NotificationItem/nm_applet' is already registered
+
+** (waybar:701324): WARNING **: 16:50:00.744: Status Notifier Item with bus name ':1.9' and object path '/org/ayatana/NotificationItem/nm_applet' is already registered
+
+** (waybar:701324): WARNING **: 16:50:00.773: Status Notifier Item with bus name ':1.102617' and object path '/org/ayatana/NotificationItem/steam' is already registered
+Fontconfig warning: using without calling FcInit()
