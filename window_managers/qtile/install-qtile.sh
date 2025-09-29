@@ -2,6 +2,12 @@
 
 # Qtile Installation Script
 # Python-based tiling window manager for X11
+#
+# Package Availability Strategy:
+# - Core packages (qtile, python-psutil, python-dbus-next) are available in most official repos
+# - Optional packages (python-iwlib, python-pulsectl-asyncio) may be AUR-only on Arch
+# - Fallback to UV (following dotfiles UV-first policy) when system packages unavailable
+# - Optional packages won't cause installation failure - they enable additional features
 
 set -euo pipefail
 
@@ -12,29 +18,296 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Global variables
+DISTRO=""
+PKG_MANAGER=""
+
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Install Qtile and dependencies
-install_qtile() {
-    log_info "Installing Qtile and its dependencies..."
+# Detect package manager and distribution
+detect_system() {
+    if command -v pacman &> /dev/null; then
+        DISTRO="arch"
+        PKG_MANAGER="pacman"
+    elif command -v dnf &> /dev/null; then
+        DISTRO="fedora"
+        PKG_MANAGER="dnf"
+    elif command -v apt &> /dev/null; then
+        DISTRO="debian"
+        PKG_MANAGER="apt"
+    elif command -v nix-env &> /dev/null; then
+        DISTRO="nixos"
+        PKG_MANAGER="nix"
+    else
+        log_error "Unsupported distribution or package manager not found"
+        exit 1
+    fi
     
-    # Install from official repositories
+    log_success "Detected: $DISTRO with $PKG_MANAGER"
+}
+
+# Check if AUR helper is available
+check_aur_helper() {
+    if command -v yay &> /dev/null; then
+        echo "yay"
+    elif command -v paru &> /dev/null; then
+        echo "paru"
+    else
+        echo ""
+    fi
+}
+
+# Install Python package via UV as fallback
+# Args: $1 = system package name, $2 = pip package name, $3 = optional (true/false)
+install_python_package_fallback() {
+    local package="$1"
+    local pip_name="$2"
+    local optional="${3:-false}"
+    
+    if [[ "$optional" == "true" ]]; then
+        log_info "Optional package $package not available, trying UV fallback..."
+    else
+        log_warning "Required package $package not available, trying UV fallback..."
+    fi
+    
+    if command -v uv &> /dev/null; then
+        log_info "Installing $pip_name via UV..."
+        # Try user installation first (safer)
+        if uv pip install "$pip_name" --user 2>/dev/null; then
+            log_success "Successfully installed $pip_name via UV (user install)"
+            return 0
+        elif uv tool install "$pip_name" 2>/dev/null; then
+            log_success "Successfully installed $pip_name via UV (tool install)"
+            return 0
+        else
+            if [[ "$optional" == "true" ]]; then
+                log_warning "Failed to install optional package $pip_name via UV. Qtile may have reduced functionality."
+                return 0  # Don't fail for optional packages
+            else
+                log_error "Failed to install required package $pip_name via UV"
+                return 1
+            fi
+        fi
+    else
+        if [[ "$optional" == "true" ]]; then
+            log_warning "UV not available and $package is optional. Install manually if needed: pip install $pip_name"
+            return 0
+        else
+            log_error "UV not available and $package is required. Please install UV or manually: pip install $pip_name"
+            return 1
+        fi
+    fi
+}
+
+# Install Qtile and dependencies on Arch Linux
+install_qtile_arch() {
+    log_info "Installing Qtile and its dependencies on Arch Linux..."
+    
+    local aur_helper
+    aur_helper=$(check_aur_helper)
+    
+    # Install core packages from official repositories
     sudo pacman -S --needed --noconfirm \
         qtile \
         python-psutil \
         python-iwlib \
-        python-dbus-next \
-        python-pulsectl-asyncio
+        python-dbus-next
     
-    log_success "Qtile installed successfully"
+    # Handle python-pulsectl-asyncio with fallbacks (optional package for audio controls)
+    if [[ -n "$aur_helper" ]]; then
+        log_info "Installing optional AUR packages with $aur_helper..."
+        if ! $aur_helper -S --needed --noconfirm python-pulsectl-asyncio 2>/dev/null; then
+            log_info "python-pulsectl-asyncio not available, trying python-pulsectl..."
+            if ! $aur_helper -S --needed --noconfirm python-pulsectl 2>/dev/null; then
+                install_python_package_fallback "python-pulsectl-asyncio" "pulsectl-asyncio" "true"
+            fi
+        fi
+    else
+        log_info "No AUR helper found (yay/paru). Attempting UV fallback for optional python-pulsectl-asyncio..."
+        install_python_package_fallback "python-pulsectl-asyncio" "pulsectl-asyncio" "true"
+    fi
+    
+    log_success "Qtile core packages installed successfully"
 }
 
-# Install additional X11 tools for Qtile
-install_x11_tools() {
-    log_info "Installing additional X11 tools for Qtile..."
+# Install Qtile and dependencies on Fedora
+install_qtile_fedora() {
+    log_info "Installing Qtile and its dependencies on Fedora..."
+    
+    # Install core packages from official repositories
+    sudo dnf install -y \
+        qtile \
+        python3-psutil \
+        python3-dbus-next
+    
+    # Try optional packages with fallbacks (these enable additional features)
+    if ! sudo dnf install -y python3-iwlib 2>/dev/null; then
+        log_info "python3-iwlib not available in Fedora repos (enables network widgets)"
+        install_python_package_fallback "python3-iwlib" "iwlib" "true"
+    fi
+    
+    if ! sudo dnf install -y python3-pulsectl 2>/dev/null; then
+        log_info "python3-pulsectl not available in Fedora repos (enables audio controls)"
+        install_python_package_fallback "python3-pulsectl" "pulsectl" "true"
+    fi
+    
+    log_success "Qtile core packages installed successfully"
+}
+
+# Install Qtile and dependencies on Debian/Ubuntu
+install_qtile_debian() {
+    log_info "Installing Qtile and its dependencies on Debian/Ubuntu..."
+    
+    # Update package lists
+    sudo apt update
+    
+    # Install core packages from official repositories
+    sudo apt install -y \
+        qtile \
+        python3-psutil \
+        python3-dbus-dev
+    
+    # Try optional packages with fallbacks (these enable additional features)
+    if ! sudo apt install -y python3-iwlib 2>/dev/null; then
+        log_info "python3-iwlib not available in Debian/Ubuntu repos (enables network widgets)"
+        install_python_package_fallback "python3-iwlib" "iwlib" "true"
+    fi
+    
+    if ! sudo apt install -y python3-pulsectl 2>/dev/null; then
+        log_info "python3-pulsectl not available in Debian/Ubuntu repos (enables audio controls)"
+        install_python_package_fallback "python3-pulsectl" "pulsectl" "true"
+    fi
+    
+    log_success "Qtile core packages installed successfully"
+}
+
+# Generate NixOS configuration with Home Manager integration
+generate_nixos_config_with_home_manager() {
+    log_info "Generating NixOS configuration with Home Manager integration..."
+    
+    local config_file="$HOME/nixos-qtile-config.nix"
+    
+    cat > "$config_file" << 'EOF'
+# NixOS Configuration for Qtile with Home Manager
+# Generated by qtile installer
+# Copy relevant sections to your /etc/nixos/configuration.nix
+
+let
+  # Import Home Manager NixOS module
+  home-manager = builtins.fetchTarball {
+    url = "https://github.com/nix-community/home-manager/archive/master.tar.gz";
+  };
+in
+{
+  imports = [
+    (import "${home-manager}/nixos")
+    # Your hardware configuration
+    # ./hardware-configuration.nix
+  ];
+
+  # Enable X11 and Qtile window manager
+  services.xserver = {
+    enable = true;
+    windowManager.qtile.enable = true;
+    displayManager.defaultSession = "none+qtile";
+  };
+
+  # System packages for Qtile
+  environment.systemPackages = with pkgs; [
+    python3Packages.qtile
+    python3Packages.psutil
+    python3Packages.iwlib
+    python3Packages.dbus-python
+    python3Packages.pulsectl
+    alacritty
+    rofi
+    feh
+    picom
+    scrot
+    networkmanagerapplet
+    blueman
+    pavucontrol
+    dunst
+    # Fonts for Qtile
+    jetbrains-mono
+    fira-code
+    noto-fonts
+    noto-fonts-emoji
+  ];
+
+  # Home Manager configuration
+  home-manager.useGlobalPkgs = true;
+  home-manager.useUserPackages = true;
+  
+  # IMPORTANT: Uncomment and customize the following for your user(s)
+  # Replace "username" with your actual username
+  # home-manager.users.username = { pkgs, ... }: {
+  #   home.stateVersion = "24.05"; # Match your NixOS version
+  #   
+  #   # Qtile configuration via Home Manager
+  #   xdg.configFile."qtile/config.py".source = ./qtile/config.py;
+  #   xdg.configFile."qtile/autostart.sh" = {
+  #     source = ./qtile/autostart.sh;
+  #     executable = true;
+  #   };
+  #   
+  #   # User packages specific to Qtile
+  #   home.packages = with pkgs; [
+  #     # Add any user-specific packages here
+  #   ];
+  # };
+}
+EOF
+    
+    log_success "NixOS configuration generated at: $config_file"
+    log_info "Instructions:"
+    log_info "1. Copy the relevant sections from $config_file to your /etc/nixos/configuration.nix"
+    log_info "2. Uncomment and customize the home-manager.users.<username> section"
+    log_info "3. Replace 'username' with your actual username"
+    log_info "4. Adjust the home.stateVersion to match your NixOS version"
+    log_info "5. Run: sudo nixos-rebuild switch"
+}
+
+# Install Qtile and dependencies on NixOS
+install_qtile_nixos() {
+    log_info "Installing Qtile and its dependencies on NixOS..."
+    
+    # Generate NixOS configuration with Home Manager
+    generate_nixos_config_with_home_manager
+    
+    log_warning "NixOS installation requires system configuration changes."
+    log_info "A complete NixOS configuration has been generated for you."
+}
+
+# Install Qtile based on detected distribution
+install_qtile() {
+    case "$DISTRO" in
+        arch)
+            install_qtile_arch
+            ;;
+        fedora)
+            install_qtile_fedora
+            ;;
+        debian)
+            install_qtile_debian
+            ;;
+        nixos)
+            install_qtile_nixos
+            return
+            ;;
+        *)
+            log_error "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+    esac
+}
+
+# Install additional X11 tools for Qtile on Arch Linux
+install_x11_tools_arch() {
+    log_info "Installing additional X11 tools for Qtile on Arch Linux..."
     
     sudo pacman -S --needed --noconfirm \
         alacritty \
@@ -50,9 +323,67 @@ install_x11_tools() {
     log_success "X11 tools installed"
 }
 
-# Install fonts needed for Qtile
-install_fonts() {
-    log_info "Installing fonts for Qtile..."
+# Install additional X11 tools for Qtile on Fedora
+install_x11_tools_fedora() {
+    log_info "Installing additional X11 tools for Qtile on Fedora..."
+    
+    sudo dnf install -y \
+        alacritty \
+        rofi \
+        feh \
+        picom \
+        scrot \
+        NetworkManager-applet \
+        blueman \
+        pavucontrol \
+        dunst
+    
+    log_success "X11 tools installed"
+}
+
+# Install additional X11 tools for Qtile on Debian/Ubuntu
+install_x11_tools_debian() {
+    log_info "Installing additional X11 tools for Qtile on Debian/Ubuntu..."
+    
+    sudo apt install -y \
+        alacritty \
+        rofi \
+        feh \
+        picom \
+        scrot \
+        network-manager-gnome \
+        blueman \
+        pavucontrol \
+        dunst
+    
+    log_success "X11 tools installed"
+}
+
+# Install X11 tools based on detected distribution
+install_x11_tools() {
+    case "$DISTRO" in
+        arch)
+            install_x11_tools_arch
+            ;;
+        fedora)
+            install_x11_tools_fedora
+            ;;
+        debian)
+            install_x11_tools_debian
+            ;;
+        nixos)
+            log_info "X11 tools are included in NixOS configuration above"
+            ;;
+        *)
+            log_error "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+    esac
+}
+
+# Install fonts needed for Qtile on Arch Linux
+install_fonts_arch() {
+    log_info "Installing fonts for Qtile on Arch Linux..."
     
     sudo pacman -S --needed --noconfirm \
         ttf-jetbrains-mono-nerd \
@@ -61,6 +392,54 @@ install_fonts() {
         noto-fonts-emoji
     
     log_success "Fonts installed"
+}
+
+# Install fonts needed for Qtile on Fedora
+install_fonts_fedora() {
+    log_info "Installing fonts for Qtile on Fedora..."
+    
+    sudo dnf install -y \
+        jetbrains-mono-fonts \
+        fira-code-fonts \
+        google-noto-fonts-common \
+        google-noto-emoji-fonts
+    
+    log_success "Fonts installed"
+}
+
+# Install fonts needed for Qtile on Debian/Ubuntu
+install_fonts_debian() {
+    log_info "Installing fonts for Qtile on Debian/Ubuntu..."
+    
+    sudo apt install -y \
+        fonts-jetbrains-mono \
+        fonts-firacode \
+        fonts-noto \
+        fonts-noto-color-emoji
+    
+    log_success "Fonts installed"
+}
+
+# Install fonts based on detected distribution
+install_fonts() {
+    case "$DISTRO" in
+        arch)
+            install_fonts_arch
+            ;;
+        fedora)
+            install_fonts_fedora
+            ;;
+        debian)
+            install_fonts_debian
+            ;;
+        nixos)
+            log_info "Fonts are included in NixOS configuration above"
+            ;;
+        *)
+            log_error "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+    esac
 }
 
 # Create basic Qtile configuration
@@ -312,19 +691,106 @@ EOF
     log_success "Created autostart script"
 }
 
+# Create .xinitrc for startx qtile
+create_xinitrc() {
+    log_info "Creating .xinitrc for startx support..."
+    
+    local xinitrc="$HOME/.xinitrc"
+    
+    # Backup existing .xinitrc if present
+    if [[ -f "$xinitrc" ]]; then
+        local backup_xinitrc="$xinitrc.backup.$(date +%Y%m%d-%H%M%S)"
+        cp "$xinitrc" "$backup_xinitrc"
+        log_info "Backed up existing .xinitrc to $backup_xinitrc"
+    fi
+    
+    # Create minimal .xinitrc for Qtile
+    cat > "$xinitrc" << 'EOF'
+#!/bin/sh
+
+# .xinitrc - X11 startup script for Qtile
+
+# Source system-wide xinitrc scripts
+if [ -d /etc/X11/xinit/xinitrc.d ]; then
+    for f in /etc/X11/xinit/xinitrc.d/?*.sh; do
+        [ -x "$f" ] && . "$f"
+    done
+    unset f
+fi
+
+# Set environment variables
+export QT_QPA_PLATFORMTHEME=qt5ct
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
+export XDG_CURRENT_DESKTOP=qtile
+export XDG_SESSION_DESKTOP=qtile
+
+# Start Qtile window manager
+exec qtile start
+EOF
+    
+    # Set proper permissions (user read/write only)
+    chmod 600 "$xinitrc"
+    
+    # Ensure ownership is correct
+    chown "$USER:$(id -gn)" "$xinitrc" 2>/dev/null || true
+    
+    if [[ -f "$xinitrc" && -r "$xinitrc" ]]; then
+        log_success "Created .xinitrc at $xinitrc"
+        return 0
+    else
+        log_error "Failed to create .xinitrc"
+        return 1
+    fi
+}
+
 main() {
     echo "Installing Qtile (Python-based tiling window manager)..."
     echo
     
+    # Initialize variables
+    local XINITRC_CREATED=false
+    
+    detect_system
     install_qtile
-    install_x11_tools
-    install_fonts
-    create_qtile_config
-    create_autostart_script
+    
+    # Skip additional tools installation for NixOS as it requires configuration changes
+    if [[ "$DISTRO" != "nixos" ]]; then
+        install_x11_tools
+        install_fonts
+        create_qtile_config
+        create_autostart_script
+        
+        # Create .xinitrc for startx support
+        if create_xinitrc; then
+            XINITRC_CREATED=true
+        else
+            XINITRC_CREATED=false
+        fi
+    fi
     
     log_success "Qtile installation completed!"
-    log_info "You can start Qtile with: startx qtile"
-    log_info "Or from your display manager by selecting Qtile"
+    echo
+    
+    # Dependency summary
+    log_info "Package Installation Summary:"
+    echo "  ✅ Core packages: qtile, python-psutil, python-dbus-next"
+    echo "  ℹ️  Optional packages: python-iwlib (network widgets), python-pulsectl (audio controls)"
+    echo "  📦 Package sources: Official repos + AUR/UV fallbacks as needed"
+    echo
+    
+    # Show appropriate startup instructions
+    if [[ "$DISTRO" != "nixos" ]]; then
+        if [[ "$XINITRC_CREATED" == "true" ]]; then
+            log_info "You can start Qtile with: startx"
+            log_info "(.xinitrc created at $HOME/.xinitrc)"
+        else
+            log_warning "startx may not work properly - .xinitrc creation failed"
+        fi
+        log_info "Or from your display manager by selecting Qtile"
+    else
+        log_info "Configure NixOS as shown above, then start Qtile from your display manager"
+    fi
     echo
     log_info "Basic keybindings:"
     echo "  Super + Return     : Open terminal"
