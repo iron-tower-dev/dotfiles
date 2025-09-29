@@ -117,7 +117,7 @@ sudo tee /usr/share/wayland-sessions/dwl.desktop > /dev/null << 'EOF'
 [Desktop Entry]
 Name=dwl
 Comment=dwl - dwm for Wayland
-Exec=dwl
+Exec=start-dwl
 Type=Application
 EOF
 
