@@ -617,6 +617,274 @@ jstest /dev/input/js0           # Test controller input
 evtest /dev/input/event*        # Monitor all input events
 ```
 
+## Virtualization Management (QEMU/KVM/libvirt)
+
+This repository includes comprehensive virtualization support using QEMU/KVM with libvirt for managing virtual machines directly on your Arch Linux system.
+
+### Virtualization Installation
+
+```bash
+# Full virtualization setup (recommended)
+./bootstrap.sh --virt                    # Install all virtualization packages
+stow -t ~ virt                            # Deploy virtualization configs
+
+# Manual installation
+./setup/packages/04-virt-packages.sh      # Install QEMU/KVM/libvirt packages
+
+# Important: Log out and back in after installation for group permissions to take effect
+```
+
+### VM Management Commands
+
+The `vm` command provides a unified CLI interface for managing virtual machines:
+
+```bash
+# List all VMs
+vm list
+
+# Start a VM
+vm start ubuntu-vm
+
+# Stop a VM (graceful shutdown)
+vm stop ubuntu-vm
+
+# Force stop a VM
+vm force-stop ubuntu-vm
+
+# Restart a VM
+vm restart ubuntu-vm
+
+# Show VM status
+vm status ubuntu-vm
+
+# Show detailed VM information
+vm info ubuntu-vm
+
+# Connect to VM console (Ctrl+] to disconnect)
+vm console ubuntu-vm
+
+# Delete a VM (with confirmation)
+vm delete ubuntu-vm
+
+# Clone a VM
+vm clone ubuntu-vm ubuntu-vm-clone
+
+# List virtual networks
+vm networks
+
+# List storage pools
+vm pools
+```
+
+### Creating Virtual Machines
+
+#### Quick VM Creation with Templates
+
+```bash
+# Interactive VM creation with predefined templates
+vm-quick-create
+
+# Available templates:
+# 1. Ubuntu Desktop (4GB RAM, 2 CPUs, 30GB disk)
+# 2. Ubuntu Server (2GB RAM, 2 CPUs, 20GB disk)
+# 3. Fedora Workstation (4GB RAM, 2 CPUs, 30GB disk)
+# 4. Arch Linux (2GB RAM, 2 CPUs, 25GB disk)
+# 5. Windows 11 (8GB RAM, 4 CPUs, 60GB disk, UEFI + TPM 2.0)
+# 6. Debian (2GB RAM, 2 CPUs, 20GB disk)
+# 7. Custom (specify your own parameters)
+```
+
+#### Manual VM Creation
+
+```bash
+# Interactive VM creation
+vm create
+
+# Using virt-install directly
+virt-install \
+    --name my-vm \
+    --memory 2048 \
+    --vcpus 2 \
+    --disk size=20 \
+    --cdrom /path/to/iso \
+    --os-variant detect=on \
+    --graphics spice \
+    --network network=default
+```
+
+### GUI VM Management
+
+```bash
+# Open virt-manager (graphical VM management tool)
+virt-manager
+
+# Open VM viewer for specific VM
+virt-viewer ubuntu-vm
+```
+
+### Advanced VM Operations
+
+#### VM Snapshots
+
+```bash
+# Create a snapshot
+virsh snapshot-create-as ubuntu-vm snapshot1 "My snapshot description"
+
+# List snapshots
+virsh snapshot-list ubuntu-vm
+
+# Restore a snapshot
+virsh snapshot-revert ubuntu-vm snapshot1
+
+# Delete a snapshot
+virsh snapshot-delete ubuntu-vm snapshot1
+```
+
+#### Virtual Networks
+
+```bash
+# List networks
+virsh net-list --all
+
+# Start a network
+virsh net-start default
+
+# Create a new network
+virsh net-define /path/to/network.xml
+virsh net-start my-network
+virsh net-autostart my-network
+
+# Show network details
+virsh net-info default
+virsh net-dhcp-leases default     # Show DHCP leases
+```
+
+#### Storage Management
+
+```bash
+# List storage pools
+virsh pool-list --all
+
+# Create a new storage pool
+virsh pool-define-as my-pool dir --target /path/to/pool
+virsh pool-build my-pool
+virsh pool-start my-pool
+virsh pool-autostart my-pool
+
+# List volumes in a pool
+virsh vol-list default
+
+# Default VM storage location
+ls ~/VMs/                          # VM disk images stored here
+```
+
+### Virtualization Troubleshooting
+
+#### Check Virtualization Support
+
+```bash
+# Check if CPU supports virtualization
+grep -E '(vmx|svm)' /proc/cpuinfo
+
+# Check KVM module
+lsmod | grep kvm
+
+# For Intel CPUs (should show kvm_intel)
+# For AMD CPUs (should show kvm_amd)
+```
+
+#### Service and Permission Issues
+
+```bash
+# Check libvirtd service status
+sudo systemctl status libvirtd
+sudo systemctl restart libvirtd
+
+# Check if you're in required groups
+groups $USER | grep -E '(libvirt|kvm)'
+
+# Add user to groups (done by setup script)
+sudo usermod -aG libvirt,kvm $USER
+# Log out and back in for changes to take effect
+```
+
+#### Network Issues
+
+```bash
+# Check default network
+virsh net-info default
+
+# If not active, start it
+sudo virsh net-start default
+sudo virsh net-autostart default
+
+# Check network interfaces
+ip addr show virbr0
+```
+
+#### VM Won't Start
+
+```bash
+# Check VM status and configuration
+virsh dominfo vm-name
+virsh dumpxml vm-name              # View VM XML definition
+
+# View libvirtd logs
+sudo journalctl -u libvirtd -f
+
+# Check for file permission issues
+ls -la ~/VMs/
+sudo chown -R $USER:$USER ~/VMs/
+```
+
+#### Performance Optimization
+
+```bash
+# Enable nested virtualization (Intel)
+echo "options kvm_intel nested=1" | sudo tee /etc/modprobe.d/kvm.conf
+
+# Enable nested virtualization (AMD)
+echo "options kvm_amd nested=1" | sudo tee /etc/modprobe.d/kvm.conf
+
+# Reload KVM module (or reboot)
+sudo modprobe -r kvm_intel  # or kvm_amd
+sudo modprobe kvm_intel     # or kvm_amd
+
+# Check if enabled
+cat /sys/module/kvm_intel/parameters/nested  # Should show Y or 1
+```
+
+### Virtualization Directory Structure
+
+```
+virt/
+├── .config/
+│   └── libvirt/
+│       ├── libvirt.conf         # Libvirt client configuration
+│       └── templates/           # VM template storage
+├── .local/bin/
+│   ├── vm                       # Main VM management script
+│   └── vm-quick-create          # Quick VM creation with templates
+└── README.md                    # Detailed virtualization documentation
+```
+
+### Common VM Use Cases
+
+```bash
+# Development environment testing
+vm-quick-create                    # Create test VMs for different OSes
+vm snapshot create dev-vm clean    # Create clean state snapshots
+
+# Windows testing
+vm-quick-create                    # Select Windows 11 template
+# Includes UEFI + TPM 2.0 for Windows 11 requirements
+
+# Quick Linux testing
+vm clone base-ubuntu test-ubuntu   # Clone existing VM
+vm start test-ubuntu               # Test in isolated environment
+vm delete test-ubuntu              # Clean up when done
+```
+
 ## Troubleshooting
 
 ### Common Stow Issues

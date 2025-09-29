@@ -234,6 +234,8 @@ deploy_dotfiles() {
         "themes"
         "sddm"
         "gaming"
+        "virt"
+        "dwl"
     )
     
     cd "$SCRIPT_DIR"
@@ -302,10 +304,12 @@ legacy_mode() {
     echo "8. Setup Zsh shell only"
     echo "9. Setup Python build dependencies only"
     echo "10. Install gaming setup (Steam + GE-Proton)"
-    echo "11. Exit"
+    echo "11. Install virtualization (QEMU/KVM/libvirt)"
+    echo "12. Install dwl window manager"
+    echo "13. Exit"
     echo
     
-    read -p "Choose an option (1-11): " choice
+    read -p "Choose an option (1-13): " choice
     
     case $choice in
         1)
@@ -375,6 +379,36 @@ legacy_mode() {
             fi
             ;;
         11)
+            if [[ -f "$SETUP_DIR/packages/04-virt-packages.sh" ]]; then
+                bash "$SETUP_DIR/packages/04-virt-packages.sh"
+            else
+                log_error "Virtualization setup script not found"
+            fi
+            if [[ -d "virt" ]]; then
+                log_info "Deploying virtualization configurations..."
+                if stow -t "$HOME" "virt"; then
+                    log_success "Virtualization configurations deployed"
+                else
+                    log_warning "Failed to deploy virtualization configurations"
+                fi
+            fi
+            ;;
+        12)
+            if [[ -f "$SETUP_DIR/packages/dwl-setup.sh" ]]; then
+                bash "$SETUP_DIR/packages/dwl-setup.sh"
+            else
+                log_error "dwl setup script not found"
+            fi
+            if [[ -d "dwl" ]]; then
+                log_info "Deploying dwl configurations..."
+                if stow -t "$HOME" "dwl"; then
+                    log_success "dwl configurations deployed"
+                else
+                    log_warning "Failed to deploy dwl configurations"
+                fi
+            fi
+            ;;
+        13)
             log_info "Exiting..."
             exit 0
             ;;
@@ -548,6 +582,34 @@ main() {
                     log_warning "GE-Proton setup script not found"
                 fi
                 ;;
+            --virt)
+                log_header "INSTALLING VIRTUALIZATION"
+                if [[ -f "$SETUP_DIR/packages/04-virt-packages.sh" ]]; then
+                    bash "$SETUP_DIR/packages/04-virt-packages.sh"
+                else
+                    log_error "Virtualization setup script not found"
+                    exit 1
+                fi
+                if [[ -d "virt" ]]; then
+                    log_info "Deploying virtualization configurations..."
+                    if stow -t "$HOME" "virt"; then
+                        log_success "Virtualization configurations deployed"
+                    else
+                        log_warning "Failed to deploy virtualization configurations"
+                    fi
+                fi
+                log_success "Virtualization setup complete!"
+                log_warning "Please log out and back in for group permissions to take effect"
+                ;;
+            --dwl)
+                log_header "INSTALLING DWL WINDOW MANAGER"
+                if [[ -f "$SETUP_DIR/packages/dwl-setup.sh" ]]; then
+                    bash "$SETUP_DIR/packages/dwl-setup.sh"
+                else
+                    log_error "dwl setup script not found"
+                    exit 1
+                fi
+                ;;
             --help)
                 echo "Usage: $0 [option]"
                 echo "Options:"
@@ -564,6 +626,8 @@ main() {
                 echo "  --zsh          : Setup Zsh shell only (legacy)"
                 echo "  --python-deps  : Setup Python build dependencies only (legacy)"
                 echo "  --gaming       : Install gaming setup (legacy)"
+                echo "  --virt         : Install virtualization (QEMU/KVM/libvirt) (legacy)"
+                echo "  --dwl          : Install dwl window manager (legacy)"
                 echo "  --help         : Show this help"
                 echo ""
                 if [[ "$DETECTED_DISTRO" == "nixos" ]]; then

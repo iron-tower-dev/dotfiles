@@ -1,0 +1,206 @@
+# Yambar configuration for dwl
+# Catppuccin Macchiato theme
+
+# Color definitions (Catppuccin Macchiato)
+colors:
+  base: &base     0xff24273a
+  mantle: &mantle 0xff1e2030
+  crust: &crust   0xff181926
+  text: &text     0xffcad3f5
+  subtext0: &subtext0 0xffa5adcb
+  subtext1: &subtext1 0xffb8c0e0
+  overlay0: &overlay0 0xff6e738d
+  blue: &blue     0xff8aadf4
+  lavender: &lavender 0xffb7bdf8
+  sapphire: &sapphire 0xff7dc4e4
+  sky: &sky       0xff91d7e3
+  teal: &teal     0xff8bd5ca
+  green: &green   0xffa6da95
+  yellow: &yellow 0xffeed49f
+  peach: &peach   0xfff5a97f
+  maroon: &maroon 0xffee99a0
+  red: &red       0xffed8796
+  mauve: &mauve   0xffc6a0f6
+  pink: &pink     0xfff5bde6
+  flamingo: &flamingo 0xfff0c6c6
+  rosewater: &rosewater 0xfff4dbd6
+
+bar:
+  height: 26
+  location: top
+  spacing: 5
+  margin: 7
+  
+  font: JetBrainsMono Nerd Font:size=10
+  
+  foreground: *text
+  background: *base
+  
+  border:
+    width: 2
+    color: *blue
+    margin: 3
+    
+  left:
+    - river:
+        anchors:
+          - id: 1
+            content:
+              string:
+                text: "1"
+                foreground: *text
+          - id: 2
+            content:
+              string:
+                text: "2"
+                foreground: *text
+          - id: 3
+            content:
+              string:
+                text: "3"
+                foreground: *text
+          - id: 4
+            content:
+              string:
+                text: "4"
+                foreground: *text
+          - id: 5
+            content:
+              string:
+                text: "5"
+                foreground: *text
+          - id: 6
+            content:
+              string:
+                text: "6"
+                foreground: *text
+          - id: 7
+            content:
+              string:
+                text: "7"
+                foreground: *text
+          - id: 8
+            content:
+              string:
+                text: "8"
+                foreground: *text
+          - id: 9
+            content:
+              string:
+                text: "9"
+                foreground: *text
+    
+  center:
+    - clock:
+        time-format: "%H:%M:%S"
+        date-format: "%Y-%m-%d"
+        content:
+          - string:
+              text: " {date}  {time}"
+              foreground: *blue
+  
+  right:
+    - network:
+        name: wlan0
+        poll-interval: 5000
+        content:
+          map:
+            conditions:
+              state == down: {empty: {}}
+              state == up:
+                string:
+                  text: "  {ssid}"
+                  foreground: *green
+    
+    - network:
+        name: eth0
+        poll-interval: 5000
+        content:
+          map:
+            conditions:
+              state == down: {empty: {}}
+              state == up:
+                string:
+                  text: "  Connected"
+                  foreground: *green
+    
+    - alsa:
+        card: default
+        mixer: Master
+        content:
+          - map:
+              conditions:
+                ~online: {empty: {}}
+                online:
+                  map:
+                    on-click: /usr/bin/pamixer --toggle-mute
+                    conditions:
+                      muted:
+                        string:
+                          text: " "
+                          foreground: *red
+                      ~muted:
+                        ramp:
+                          tag: percent
+                          items:
+                            - string:
+                                text: " "
+                                foreground: *blue
+                            - string:
+                                text: " "
+                                foreground: *blue
+                            - string:
+                                text: " "
+                                foreground: *blue
+    
+    - battery:
+        name: BAT0
+        poll-interval: 30000
+        content:
+          - map:
+              conditions:
+                state == unknown:
+                  {empty: {}}
+                state == full:
+                  string:
+                    text: "  {capacity}%"
+                    foreground: *green
+                state == discharging:
+                  - ramp:
+                      tag: capacity
+                      items:
+                        - string:
+                            text: " "
+                            foreground: *red
+                        - string:
+                            text: " "
+                            foreground: *yellow
+                        - string:
+                            text: " "
+                            foreground: *green
+                        - string:
+                            text: " "
+                            foreground: *green
+                        - string:
+                            text: " "
+                            foreground: *green
+                  - string:
+                      text: "{capacity}%"
+                      foreground: *text
+                state == charging:
+                  - string:
+                      text: "  {capacity}%"
+                      foreground: *yellow
+    
+    - backlight:
+        name: intel_backlight
+        content:
+          - string:
+              text: "  {percent}%"
+              foreground: *yellow
+    
+    - label:
+        content:
+          string:
+            text: " "
+            foreground: *text
