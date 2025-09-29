@@ -430,6 +430,12 @@ create_startup_files() {
 create_xinitrc() {
     local xinitrc="$HOME/.xinitrc"
     
+    # Don't overwrite an existing .xinitrc (e.g. one Qtile installer just created)
+    if [[ -f "$xinitrc" ]]; then
+        log_info "Existing .xinitrc detected; leaving it untouched."
+        return
+    fi
+    
     cat > "$xinitrc" << EOF
 #!/bin/bash
 
