@@ -256,7 +256,9 @@ install_window_manager() {
             fi
             ;;
         qtile)
+            # Qtile installer already supports multiple distributions including Fedora
             if [[ -x "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh" ]]; then
+                log_info "Using multi-distribution Qtile installer"
                 bash "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh"
             else
                 log_error "Qtile installer not found"; exit 1
