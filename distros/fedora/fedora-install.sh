@@ -307,15 +307,32 @@ setup_themes() {
     
     # Install GTK themes and icon packs (runtime packages only)
     log_info "Installing theme packages..."
-    sudo dnf install -y \
-        gtk3 \
-        gtk4 \
-        adwaita-gtk3-theme \
-        qt5ct \
-        qt6ct \
-        kvantum \
-        papirus-icon-theme \
-        breeze-icon-theme
+    
+    # List of theme packages to install
+    local theme_packages=(
+        "gtk3"
+        "gtk4"
+        "adwaita-gtk3-theme"
+        "qt5ct"
+        "qt6ct"
+        "kvantum"
+        "papirus-icon-theme"
+        "breeze-icon-theme"
+    )
+    
+    # Install each package individually, skipping unavailable ones
+    for pkg in "${theme_packages[@]}"; do
+        if dnf list --available "$pkg" &>/dev/null; then
+            log_info "Installing $pkg..."
+            if sudo dnf install -y "$pkg"; then
+                log_info "Successfully installed $pkg"
+            else
+                log_warn "Failed to install $pkg despite being available"
+            fi
+        else
+            log_warn "Package $pkg not available, skipping"
+        fi
+    done
     
     # lxappearance is already installed in X11 section if needed
     log_success "Theme packages installed"
