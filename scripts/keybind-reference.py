@@ -90,6 +90,7 @@ class KeybindingReference:
                 {'key': 'SUPER + Q', 'action': 'Close Active Window', 'category': 'Window Management'},
                 {'key': 'SUPER + M', 'action': 'Exit Hyprland', 'category': 'Window Management'},
                 {'key': 'SUPER + T', 'action': 'Toggle Floating Window', 'category': 'Window Management'},
+                {'key': 'SUPER + F', 'action': 'Toggle Fullscreen', 'category': 'Window Management'},
                 {'key': 'SUPER + P', 'action': 'Pseudotile (Dwindle)', 'category': 'Window Management'},
                 {'key': 'SUPER + J', 'action': 'Toggle Split (Dwindle)', 'category': 'Window Management'},
                 
