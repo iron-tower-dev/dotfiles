@@ -398,7 +398,7 @@ deploy_dotfiles() {
     # Add window manager specific packages
     case "$SELECTED_WINDOW_MANAGER" in
         hyprland)
-            STOW_PACKAGES+=("hyprland" "waybar" "rofi" "sddm")
+            STOW_PACKAGES+=("hyprland" "waybar" "rofi")
             ;;
         qtile)
             STOW_PACKAGES+=("qtile")
