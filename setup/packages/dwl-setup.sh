@@ -107,27 +107,16 @@ install_dependencies() {
 build_dwl() {
     log_info "Building dwl from source..."
     
-    # Check for wlroots
+    # Check for wlroots (warning only, let build process fail if truly missing)
     log_info "Checking for wlroots..."
     if ! pkg-config --exists wlroots 2>/dev/null; then
-        log_error "wlroots not found!"
+        log_warning "pkg-config cannot find wlroots"
+        log_info "This might be okay if wlroots is installed in a non-standard location"
+        log_info "Attempting build anyway - the compile will fail if wlroots is truly missing"
         echo ""
-        log_info "dwl requires wlroots to be installed."
-        log_info "You have a few options:"
-        echo ""
-        echo "  Option 1 - Install wlroots from AUR:"
-        echo "    yay -S wlroots"
-        echo ""
-        echo "  Option 2 - Install dwl-git (includes dependencies):"
-        echo "    yay -S dwl-git"
-        echo ""
-        echo "  Option 3 - Build wlroots manually:"
-        echo "    https://gitlab.freedesktop.org/wlroots/wlroots"
-        echo ""
-        log_warning "After installing wlroots, run this script again."
-        exit 1
     else
-        log_success "wlroots is available"
+        WLROOTS_VERSION=$(pkg-config --modversion wlroots 2>/dev/null)
+        log_success "wlroots is available (version: $WLROOTS_VERSION)"
     fi
     
     local dwl_src="/tmp/dwl-build-$$"
