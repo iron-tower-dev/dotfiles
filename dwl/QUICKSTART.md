@@ -68,16 +68,17 @@ stow dwl
 
 2. **Customize Configuration**:
    ```bash
-   # Edit dwl config
+   # dwl is installed from AUR package
+   # To customize config.def.h, use the rebuild script:
+   
+   # First time: get default config
+   dwl-rebuild
+   
+   # Edit the config
    nvim ~/.config/dwl/config.def.h
    
-   # Rebuild after changes
-   cd /tmp
-   git clone https://codeberg.org/dwl/dwl.git
-   cd dwl
-   cp ~/.config/dwl/config.def.h .
-   make clean && make
-   sudo make install
+   # Rebuild with your changes
+   dwl-rebuild
    ```
 
 3. **Customize Autostart**:
@@ -121,10 +122,21 @@ journalctl --user -xe
 
 # Verify dwl is installed
 which dwl
-dwl -v
+
+# Check if it's the AUR package
+package -Qi dwl-git
 ```
 
-**Need to rebuild:**
+**Need to rebuild with custom config:**
+```bash
+# Edit config first
+nvim ~/.config/dwl/config.def.h
+
+# Then rebuild
+dwl-rebuild
+```
+
+**Reinstall from AUR:**
 ```bash
 ./setup/packages/dwl-setup.sh
 ```

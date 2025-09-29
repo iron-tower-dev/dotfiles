@@ -76,13 +76,12 @@ cd ~/dotfiles
 
 This will:
 1. ✅ Check for Arch Linux
-2. ✅ Install all dependencies (~30 packages)
-3. ✅ Clone dwl from Codeberg
-4. ✅ Build and install dwl
-5. ✅ Create all configuration files
-6. ✅ Set up SDDM integration
-7. ✅ Create helper scripts
-8. ✅ Ask if you want to deploy via stow
+2. ✅ Install all dependencies
+3. ✅ Install dwl-git from AUR
+4. ✅ Create all configuration files
+5. ✅ Set up SDDM integration
+6. ✅ Create helper scripts
+7. ✅ Ask if you want to deploy via stow
 
 ### Method 2: Manual Setup Script
 ```bash
@@ -210,19 +209,25 @@ dotfiles/
 ### Customization
 
 #### Edit dwl Configuration
+
+dwl is installed from the AUR package. To customize:
+
 ```bash
+# First, get the default config (first time only)
+dwl-rebuild
+
+# Edit the configuration
 nvim ~/.config/dwl/config.def.h
+
+# Rebuild dwl with your changes
+dwl-rebuild
 ```
 
-Then rebuild:
-```bash
-cd /tmp
-git clone https://codeberg.org/dwl/dwl.git
-cd dwl
-cp ~/.config/dwl/config.def.h .
-make clean && make
-sudo make install
-```
+The `dwl-rebuild` script will:
+- Clone dwl from source
+- Use your custom config.def.h
+- Build and install to /usr/local/bin/dwl
+- Clean up build files
 
 #### Edit Autostart
 ```bash
@@ -284,7 +289,16 @@ cd ~/dotfiles
 stow -R dwl  # Restow
 ```
 
-### Rebuild dwl
+### Rebuild dwl with custom config
+```bash
+# Edit config
+nvim ~/.config/dwl/config.def.h
+
+# Rebuild
+dwl-rebuild
+```
+
+### Reinstall from AUR
 ```bash
 ./setup/packages/dwl-setup.sh
 ```
