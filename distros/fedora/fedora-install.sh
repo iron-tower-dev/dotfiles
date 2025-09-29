@@ -374,8 +374,10 @@ configure_zsh_shell() {
     # Install oh-my-zsh using a git clone (avoids piping remote script to shell)
     if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
         log_info "Installing Oh My Zsh via git clone..."
+        local tmpdir
         tmpdir="$(mktemp -d)"
-        trap 'rm -rf "$tmpdir"' RETURN
+        trap 'rm -rf "${tmpdir:-}"' RETURN
+        
         if git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"; then
             # Initialize a basic .zshrc if not present
             if [[ ! -f "$HOME/.zshrc" ]]; then
@@ -385,6 +387,10 @@ configure_zsh_shell() {
         else
             log_warn "Failed to clone Oh My Zsh; skipping installation"
         fi
+        
+        # Clear trap before function continues
+        trap - RETURN
+        rm -rf "${tmpdir:-}"
     fi
     
     log_success "Zsh shell configured"
@@ -413,12 +419,27 @@ setup_development_tools() {
         local url="$1" checksum_url="$2" dest="$3"
         local tmpdir
         tmpdir="$(mktemp -d)" || return 1
-        trap 'rm -rf "$tmpdir"' RETURN
+        
+        # Set up cleanup trap with guarded expansion
+        trap 'rm -rf "${tmpdir:-}"' RETURN
+        
         local sumfile="$tmpdir/SHA256SUM"
         log_info "Downloading: $url"
-        curl -fL "$url" -o "$dest" || { log_error "Download failed: $url"; return 1; }
+        if ! curl -fL "$url" -o "$dest"; then
+            log_error "Download failed: $url"
+            trap - RETURN  # Clear trap before return
+            rm -rf "${tmpdir:-}"
+            return 1
+        fi
+        
         log_info "Fetching checksum: $checksum_url"
-        curl -fL "$checksum_url" -o "$sumfile" || { log_error "Failed to fetch checksum"; return 1; }
+        if ! curl -fL "$checksum_url" -o "$sumfile"; then
+            log_error "Failed to fetch checksum"
+            trap - RETURN  # Clear trap before return
+            rm -rf "${tmpdir:-}"
+            return 1
+        fi
+        
         # The checksum file may contain either "<sha>  <filename>" or just the digest; normalize
         if grep -qE "^[0-9a-fA-F]{64}\\s+" "$sumfile"; then
             # If the checksum file contains filename, ensure it matches our dest basename
@@ -428,7 +449,12 @@ setup_development_tools() {
                 sha="$(head -n1 "$sumfile" | awk '{print $1}')"
                 echo "$sha  $(basename "$dest")" > "$sumfile"
             fi
-            (cd "$(dirname "$dest")" && sha256sum -c "$sumfile") || { log_error "Checksum verification failed"; return 1; }
+            if ! (cd "$(dirname "$dest")" && sha256sum -c "$sumfile"); then
+                log_error "Checksum verification failed"
+                trap - RETURN  # Clear trap before return
+                rm -rf "${tmpdir:-}"
+                return 1
+            fi
         else
             # Single-line sha; compute and compare
             local expected
@@ -436,9 +462,16 @@ setup_development_tools() {
             local actual
             actual="$(sha256sum "$dest" | awk '{print $1}')"
             if [[ "$expected" != "$actual" ]]; then
-                log_error "Checksum mismatch: expected $expected got $actual"; return 1
+                log_error "Checksum mismatch: expected $expected got $actual"
+                trap - RETURN  # Clear trap before return
+                rm -rf "${tmpdir:-}"
+                return 1
             fi
         fi
+        
+        # Clear trap before successful return
+        trap - RETURN
+        rm -rf "${tmpdir:-}"
         return 0
     }
 
