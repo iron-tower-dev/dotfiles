@@ -17,6 +17,7 @@ NC='\033[0m' # No Color
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_warn() { log_warning "$@"; }  # Alias for log_warning to maintain compatibility
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_header() { echo -e "${PURPLE}[SETUP]${NC} $1"; }
 
