@@ -253,8 +253,8 @@ static const Layout layouts[] = {
 	{ "[M]",      monocle },
 };
 
-/* key definitions */
-#define MODKEY Mod1Mask
+/* key definitions - Standardized with Hyprland */
+#define MODKEY Mod4Mask  /* Super/Windows key to match Hyprland */
 #define TAGKEYS(KEY,TAG) \
 	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
 	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
@@ -269,42 +269,85 @@ static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() 
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_bg, "-nf", col_fg, "-sb", col_blue, "-sf", col_bg, NULL };
 static const char *termcmd[]  = { "alacritty", NULL };
 static const char *roficmd[]  = { "rofi", "-show", "drun", NULL };
+static const char *filecmd[]  = { "thunar", NULL };
 
-/* volume control */
+/* volume and media control */
 static const char *vol_up[]   = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%", NULL };
 static const char *vol_down[] = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%", NULL };
 static const char *vol_mute[] = { "pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle", NULL };
+static const char *mic_mute[] = { "pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle", NULL };
+static const char *bri_up[]   = { "brightnessctl", "set", "+5%", NULL };
+static const char *bri_down[] = { "brightnessctl", "set", "5%-", NULL };
+static const char *play_pause[] = { "playerctl", "play-pause", NULL };
+static const char *next_track[] = { "playerctl", "next", NULL };
+static const char *prev_track[] = { "playerctl", "previous", NULL };
+
+/* application commands - use SHCMD for complex commands */
+#define WALLPAPER_CMD "feh --bg-scale --randomize ~/.config/wallpapers/* 2>/dev/null || feh --bg-scale ~/.config/wallpapers/default.jpg"
+#define KEYBIND_REF_CMD "/usr/bin/python3 ~/dotfiles/scripts/keybind-reference.py"
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
-	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
-	{ MODKEY,                       XK_r,      spawn,          {.v = roficmd } },
-	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
+	/* === CORE APPLICATION BINDINGS (match Hyprland) === */
 	{ MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
-	{ MODKEY,                       XK_b,      togglebar,      {0} },
+	{ MODKEY,                       XK_q,      killclient,     {0} },
+	{ MODKEY,                       XK_m,      quit,           {0} },
+	{ MODKEY,                       XK_e,      spawn,          {.v = filecmd } },
+	{ MODKEY,                       XK_space,  spawn,          {.v = roficmd } },
+	
+	/* === WINDOW MANAGEMENT === */
+	{ MODKEY,                       XK_t,      togglefloating, {0} },
+	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[2]} }, /* monocle (fullscreen-like) */
+	
+	/* === FOCUS MOVEMENT (vim keys + arrow keys) === */
+	{ MODKEY,                       XK_Left,   focusstack,     {.i = -1 } },
+	{ MODKEY,                       XK_Right,  focusstack,     {.i = +1 } },
+	{ MODKEY,                       XK_Up,     focusstack,     {.i = -1 } },
+	{ MODKEY,                       XK_Down,   focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
-	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
 	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
 	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-	{ MODKEY|ShiftMask,             XK_Return, zoom,           {0} },
+	
+	/* === LAYOUT MANAGEMENT === */
 	{ MODKEY,                       XK_Tab,    view,           {0} },
-	{ MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
-	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
-	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
-	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
-	{ MODKEY,                       XK_space,  setlayout,      {0} },
-	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
-	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
-	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+	{ MODKEY|ShiftMask,             XK_Return, zoom,           {0} },
+	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
+	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
+	{ MODKEY,                       XK_r,      setlayout,      {.v = &layouts[0]} }, /* tiled */
+	{ MODKEY|ShiftMask,             XK_f,      setlayout,      {.v = &layouts[1]} }, /* floating */
+	{ MODKEY|ShiftMask,             XK_m,      setlayout,      {.v = &layouts[2]} }, /* monocle */
+	{ MODKEY|ControlMask,           XK_space,  setlayout,      {0} },
+	
+	/* === ADDITIONAL FEATURES === */
+	{ MODKEY,                       XK_b,      togglebar,      {0} },
+	{ MODKEY,                       XK_w,      spawn,          SHCMD(WALLPAPER_CMD) },
+	{ MODKEY,                       XK_slash,  spawn,          SHCMD(KEYBIND_REF_CMD) },
+	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
+	
+	/* === MONITOR MANAGEMENT === */
 	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	
+	/* === ALL WORKSPACES === */
+	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+	
+	/* === MULTIMEDIA KEYS === */
 	{ 0,                            XF86XK_AudioRaiseVolume, spawn, {.v = vol_up } },
 	{ 0,                            XF86XK_AudioLowerVolume, spawn, {.v = vol_down } },
 	{ 0,                            XF86XK_AudioMute, spawn, {.v = vol_mute } },
+	{ 0,                            XF86XK_AudioMicMute, spawn, {.v = mic_mute } },
+	{ 0,                            XF86XK_MonBrightnessUp, spawn, {.v = bri_up } },
+	{ 0,                            XF86XK_MonBrightnessDown, spawn, {.v = bri_down } },
+	{ 0,                            XF86XK_AudioPlay, spawn, {.v = play_pause } },
+	{ 0,                            XF86XK_AudioPause, spawn, {.v = play_pause } },
+	{ 0,                            XF86XK_AudioNext, spawn, {.v = next_track } },
+	{ 0,                            XF86XK_AudioPrev, spawn, {.v = prev_track } },
+	
+	/* === WORKSPACE SWITCHING (1-9) === */
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
@@ -314,7 +357,6 @@ static Key keys[] = {
 	TAGKEYS(                        XK_7,                      6)
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
-	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
 };
 
 /* button definitions */

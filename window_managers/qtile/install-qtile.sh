@@ -476,48 +476,74 @@ import subprocess
 mod = "mod4"
 terminal = guess_terminal()
 
-# Key bindings
+# Key bindings - Standardized with Hyprland
 keys = [
-    # Switch between windows
+    # === CORE APPLICATION BINDINGS (match Hyprland) ===
+    Key([mod], "Return", lazy.spawn(terminal), desc="Launch terminal"),
+    Key([mod], "q", lazy.window.kill(), desc="Close active window"),
+    Key([mod], "m", lazy.shutdown(), desc="Exit Qtile"),
+    Key([mod], "e", lazy.spawn("thunar"), desc="Open file manager"),
+    Key([mod], "space", lazy.spawn("rofi -show drun"), desc="Application launcher"),
+    
+    # === WINDOW MANAGEMENT ===
+    Key([mod], "t", lazy.window.toggle_floating(), desc="Toggle floating window"),
+    Key([mod], "f", lazy.window.toggle_fullscreen(), desc="Toggle fullscreen"),
+    
+    # === FOCUS MOVEMENT (match Hyprland arrow keys + vim keys) ===
+    Key([mod], "Left", lazy.layout.left(), desc="Move focus to left"),
+    Key([mod], "Right", lazy.layout.right(), desc="Move focus to right"),
+    Key([mod], "Up", lazy.layout.up(), desc="Move focus up"),
+    Key([mod], "Down", lazy.layout.down(), desc="Move focus down"),
+    # Keep vim keys for compatibility
     Key([mod], "h", lazy.layout.left(), desc="Move focus to left"),
     Key([mod], "l", lazy.layout.right(), desc="Move focus to right"),
     Key([mod], "j", lazy.layout.down(), desc="Move focus down"),
     Key([mod], "k", lazy.layout.up(), desc="Move focus up"),
-    Key([mod], "space", lazy.layout.next(), desc="Move window focus to other window"),
     
-    # Move windows between left/right columns or move up/down in current stack
+    # === WINDOW MOVEMENT ===
+    Key([mod, "shift"], "Left", lazy.layout.shuffle_left(), desc="Move window to the left"),
+    Key([mod, "shift"], "Right", lazy.layout.shuffle_right(), desc="Move window to the right"),
+    Key([mod, "shift"], "Up", lazy.layout.shuffle_up(), desc="Move window up"),
+    Key([mod, "shift"], "Down", lazy.layout.shuffle_down(), desc="Move window down"),
+    # Keep vim keys for compatibility  
     Key([mod, "shift"], "h", lazy.layout.shuffle_left(), desc="Move window to the left"),
     Key([mod, "shift"], "l", lazy.layout.shuffle_right(), desc="Move window to the right"),
     Key([mod, "shift"], "j", lazy.layout.shuffle_down(), desc="Move window down"),
     Key([mod, "shift"], "k", lazy.layout.shuffle_up(), desc="Move window up"),
     
-    # Grow windows
+    # === WINDOW RESIZING ===
     Key([mod, "control"], "h", lazy.layout.grow_left(), desc="Grow window to the left"),
     Key([mod, "control"], "l", lazy.layout.grow_right(), desc="Grow window to the right"),
     Key([mod, "control"], "j", lazy.layout.grow_down(), desc="Grow window down"),
     Key([mod, "control"], "k", lazy.layout.grow_up(), desc="Grow window up"),
     Key([mod], "n", lazy.layout.normalize(), desc="Reset all window sizes"),
     
-    # Toggle between split and unsplit sides of stack
-    Key([mod, "shift"], "Return", lazy.layout.toggle_split(), desc="Toggle between split and unsplit sides of stack"),
-    Key([mod], "Return", lazy.spawn(terminal), desc="Launch terminal"),
-    
-    # Toggle between different layouts
+    # === LAYOUT MANAGEMENT ===
     Key([mod], "Tab", lazy.next_layout(), desc="Toggle between layouts"),
-    Key([mod], "w", lazy.window.kill(), desc="Kill focused window"),
+    Key([mod, "shift"], "Return", lazy.layout.toggle_split(), desc="Toggle between split and unsplit sides of stack"),
     
+    # === QTILE MANAGEMENT ===
     Key([mod, "control"], "r", lazy.reload_config(), desc="Reload the config"),
-    Key([mod, "control"], "q", lazy.shutdown(), desc="Shutdown Qtile"),
     
-    # Application launcher
-    Key([mod], "r", lazy.spawn("rofi -show drun"), desc="Spawn a command using rofi"),
+    # === ADDITIONAL FEATURES ===
+    Key([mod], "w", lazy.spawn("feh --bg-scale --randomize ~/.config/wallpapers/*"), desc="Change wallpaper"),
+    Key([mod], "slash", lazy.spawn("/usr/bin/python3 /home/" + os.environ.get('USER', 'user') + "/dotfiles/scripts/keybind-reference.py"), desc="Show keybinding reference"),
     
-    # Volume controls
+    # === MULTIMEDIA KEYS ===
     Key([], "XF86AudioRaiseVolume", lazy.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%")),
     Key([], "XF86AudioLowerVolume", lazy.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%")),
     Key([], "XF86AudioMute", lazy.spawn("pactl set-sink-mute @DEFAULT_SINK@ toggle")),
+    Key([], "XF86AudioMicMute", lazy.spawn("pactl set-sink-mute @DEFAULT_AUDIO_SOURCE@ toggle")),
+    Key([], "XF86MonBrightnessUp", lazy.spawn("brightnessctl set +5%")),
+    Key([], "XF86MonBrightnessDown", lazy.spawn("brightnessctl set 5%-")),
     
-    # Screenshot
+    # === MEDIA CONTROL ===
+    Key([], "XF86AudioNext", lazy.spawn("playerctl next")),
+    Key([], "XF86AudioPrev", lazy.spawn("playerctl previous")),
+    Key([], "XF86AudioPlay", lazy.spawn("playerctl play-pause")),
+    Key([], "XF86AudioPause", lazy.spawn("playerctl play-pause")),
+    
+    # === SCREENSHOT ===
     Key([mod], "s", lazy.spawn("scrot -s"), desc="Take a screenshot"),
 ]
 
@@ -805,11 +831,17 @@ main() {
         log_info "Configure NixOS as shown above, then start Qtile from your display manager"
     fi
     echo
-    log_info "Basic keybindings:"
+    log_info "Basic keybindings (standardized with Hyprland):"
     echo "  Super + Return     : Open terminal"
-    echo "  Super + r          : Application launcher (rofi)"
-    echo "  Super + w          : Close window"
-    echo "  Super + h/j/k/l    : Navigate windows"
+    echo "  Super + Space      : Application launcher (rofi)"
+    echo "  Super + Q          : Close active window"
+    echo "  Super + M          : Exit Qtile"
+    echo "  Super + E          : Open file manager"
+    echo "  Super + T          : Toggle floating window"
+    echo "  Super + F          : Toggle fullscreen"
+    echo "  Super + W          : Change wallpaper"
+    echo "  Super + /          : Show keybinding reference"
+    echo "  Super + ↑/↓/←/→    : Navigate windows"
     echo "  Super + 1-9        : Switch workspaces"
     echo "  Super + Shift + 1-9: Move window to workspace"
 }

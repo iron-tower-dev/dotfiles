@@ -201,8 +201,8 @@ LIBINPUT_CONFIG_TAP_MAP_LMR -- 1/2/3 finger tap maps to left/middle/right
 */
 static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
 
-/* If you want to use the windows key for MODKEY, use WLR_MODIFIER_LOGO */
-#define MODKEY WLR_MODIFIER_ALT
+/* Using Super/Windows key to match Hyprland keybinds */
+#define MODKEY WLR_MODIFIER_LOGO
 
 #define TAGKEYS(KEY,SKEY,TAG) \
 	{ MODKEY,                    KEY,            view,            {.ui = 1 << TAG} }, \
@@ -213,16 +213,21 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 /* helper for spawning shell commands in the pre dwl-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
-/* commands */
+/* commands - Standardized with Hyprland */
 static const char *termcmd[] = { "alacritty", NULL };
-static const char *menucmd[] = { "wofi", "--show", "drun", NULL };
+static const char *menucmd[] = { "rofi", "-show", "drun", NULL };
+static const char *filecmd[] = { "thunar", NULL };
 
-/* volume and brightness commands */
+/* volume and media control commands */
 static const char *upvol[]   = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%",     NULL };
 static const char *downvol[] = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%",     NULL };
 static const char *mutevol[] = { "pactl", "set-sink-mute",   "@DEFAULT_SINK@", "toggle",  NULL };
-static const char *upbright[] = { "brightnessctl", "set", "5%+", NULL };
+static const char *mutemic[] = { "pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle", NULL };
+static const char *upbright[] = { "brightnessctl", "set", "+5%", NULL };
 static const char *downbright[] = { "brightnessctl", "set", "5%-", NULL };
+static const char *playpause[] = { "playerctl", "play-pause", NULL };
+static const char *nexttrack[] = { "playerctl", "next", NULL };
+static const char *prevtrack[] = { "playerctl", "previous", NULL };
 
 /* screenshot commands */
 static const char *screenshot[] = { "grim", NULL };
@@ -231,37 +236,60 @@ static const char *screenshot_select[] = { "sh", "-c", "grim -g \"$(slurp)\"", N
 static const Key keys[] = {
 	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
 	/* modifier                  key                 function        argument */
-	{ MODKEY,                    XKB_KEY_p,          spawn,          {.v = menucmd} },
+	/* === CORE APPLICATION BINDINGS (match Hyprland) === */
 	{ MODKEY,                    XKB_KEY_Return,     spawn,          {.v = termcmd} },
+	{ MODKEY,                    XKB_KEY_q,          killclient,     {0} },
+	{ MODKEY,                    XKB_KEY_m,          quit,           {0} },
+	{ MODKEY,                    XKB_KEY_e,          spawn,          {.v = filecmd} },
+	{ MODKEY,                    XKB_KEY_space,      spawn,          {.v = menucmd} },
+	
+	/* === WINDOW MANAGEMENT === */
+	{ MODKEY,                    XKB_KEY_t,          togglefloating, {0} },
+	{ MODKEY,                    XKB_KEY_f,          togglefullscreen, {0} },
+	
+	/* === FOCUS MOVEMENT (vim keys) === */
 	{ MODKEY,                    XKB_KEY_j,          focusstack,     {.i = +1} },
 	{ MODKEY,                    XKB_KEY_k,          focusstack,     {.i = -1} },
-	{ MODKEY,                    XKB_KEY_i,          incnmaster,     {.i = +1} },
-	{ MODKEY,                    XKB_KEY_d,          incnmaster,     {.i = -1} },
 	{ MODKEY,                    XKB_KEY_h,          setmfact,       {.f = -0.05} },
 	{ MODKEY,                    XKB_KEY_l,          setmfact,       {.f = +0.05} },
+	
+	/* === LAYOUT MANAGEMENT === */
 	{ MODKEY,                    XKB_KEY_Tab,        view,           {0} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_C,          killclient,     {0} },
-	{ MODKEY,                    XKB_KEY_t,          setlayout,      {.v = &layouts[0]} },
-	{ MODKEY,                    XKB_KEY_f,          setlayout,      {.v = &layouts[1]} },
-	{ MODKEY,                    XKB_KEY_m,          setlayout,      {.v = &layouts[2]} },
-	{ MODKEY,                    XKB_KEY_space,      setlayout,      {0} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_space,      togglefloating, {0} },
-	{ MODKEY,                    XKB_KEY_e,         togglefullscreen, {0} },
-	{ MODKEY,                    XKB_KEY_0,          view,           {.ui = ~0} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_parenright, tag,            {.ui = ~0} },
+	{ MODKEY,                    XKB_KEY_i,          incnmaster,     {.i = +1} },
+	{ MODKEY,                    XKB_KEY_d,          incnmaster,     {.i = -1} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_T,          setlayout,      {.v = &layouts[0]} }, /* tiled */
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_F,          setlayout,      {.v = &layouts[1]} }, /* floating */
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_M,          setlayout,      {.v = &layouts[2]} }, /* monocle */
+	{ MODKEY|WLR_MODIFIER_CTRL,  XKB_KEY_space,      setlayout,      {0} },
+	
+	/* === ADDITIONAL FEATURES === */
+	{ MODKEY,                    XKB_KEY_w,          spawn,          SHCMD("wbg $(find ~/.config/wallpapers -type f | shuf -n1) 2>/dev/null || swaybg -i ~/.config/wallpapers/current.jpg &") },
+	{ MODKEY,                    XKB_KEY_slash,      spawn,          SHCMD("/usr/bin/python3 ~/dotfiles/scripts/keybind-reference.py") },
+	{ MODKEY,                    XKB_KEY_p,          spawn,          {.v = menucmd} }, /* alternative launcher */
+	
+	/* === MONITOR MANAGEMENT === */
 	{ MODKEY,                    XKB_KEY_comma,      focusmon,       {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY,                    XKB_KEY_period,     focusmon,       {.i = WLR_DIRECTION_RIGHT} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_less,       tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_greater,    tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 	
-	/* Volume and brightness controls */
+	/* === ALL WORKSPACES === */
+	{ MODKEY,                    XKB_KEY_0,          view,           {.ui = ~0} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_parenright, tag,            {.ui = ~0} },
+	
+	/* === MULTIMEDIA KEYS === */
 	{ 0,                         XKB_KEY_XF86AudioRaiseVolume, spawn, {.v = upvol} },
 	{ 0,                         XKB_KEY_XF86AudioLowerVolume, spawn, {.v = downvol} },
 	{ 0,                         XKB_KEY_XF86AudioMute,        spawn, {.v = mutevol} },
+	{ 0,                         XKB_KEY_XF86AudioMicMute,     spawn, {.v = mutemic} },
 	{ 0,                         XKB_KEY_XF86MonBrightnessUp,  spawn, {.v = upbright} },
 	{ 0,                         XKB_KEY_XF86MonBrightnessDown,spawn, {.v = downbright} },
+	{ 0,                         XKB_KEY_XF86AudioPlay,        spawn, {.v = playpause} },
+	{ 0,                         XKB_KEY_XF86AudioPause,       spawn, {.v = playpause} },
+	{ 0,                         XKB_KEY_XF86AudioNext,        spawn, {.v = nexttrack} },
+	{ 0,                         XKB_KEY_XF86AudioPrev,        spawn, {.v = prevtrack} },
 	
-	/* Screenshots */
+	/* === SCREENSHOTS === */
 	{ MODKEY,                    XKB_KEY_s,          spawn,          {.v = screenshot_select} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_S,          spawn,          {.v = screenshot} },
 
@@ -447,17 +475,22 @@ main() {
     log_info "DWL has been built and installed to /usr/local/bin/dwl"
     log_info "You can start DWL from your display manager or run 'dwl' in a TTY"
     echo
-    log_info "Basic keybindings (Alt key is the modifier):"
-    echo "  Alt + Return         : Open terminal (alacritty)"
-    echo "  Alt + p              : Application launcher (wofi)"
-    echo "  Alt + Shift + c      : Close window"
-    echo "  Alt + j/k            : Navigate windows"
-    echo "  Alt + h/l            : Resize master area"
-    echo "  Alt + 1-9            : Switch tags (workspaces)"
-    echo "  Alt + Shift + 1-9    : Move window to tag"
-    echo "  Alt + s              : Screenshot selection"
-    echo "  Alt + Shift + s      : Full screenshot"
-    echo "  Alt + Shift + q      : Quit DWL"
+    log_info "Basic keybindings (standardized with Hyprland):"
+    echo "  Super + Return       : Open terminal (alacritty)"
+    echo "  Super + Space        : Application launcher (rofi)"
+    echo "  Super + Q            : Close active window"
+    echo "  Super + M            : Exit DWL"
+    echo "  Super + E            : Open file manager (thunar)"
+    echo "  Super + T            : Toggle floating window"
+    echo "  Super + F            : Toggle fullscreen"
+    echo "  Super + W            : Change wallpaper"
+    echo "  Super + /            : Show keybinding reference"
+    echo "  Super + j/k          : Navigate windows"
+    echo "  Super + h/l          : Resize master area"
+    echo "  Super + 1-9          : Switch tags (workspaces)"
+    echo "  Super + Shift + 1-9  : Move window to tag"
+    echo "  Super + s            : Screenshot selection"
+    echo "  Super + Shift + s    : Full screenshot"
     echo
     log_info "Configuration files:"
     echo "  Source: $DWL_DIR"
