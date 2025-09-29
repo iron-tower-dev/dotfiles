@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dotfiles Bootstrap Script
-# This script sets up a complete Hyprland environment with Catppuccin theming
+# Multi-distribution and multi-window manager dotfiles installer
 
 set -euo pipefail
 
@@ -24,6 +24,11 @@ log_header() { echo -e "${PURPLE}[SETUP]${NC} $1"; }
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SETUP_DIR="$SCRIPT_DIR/setup"
+DISTROS_DIR="$SCRIPT_DIR/distros"
+
+# Global variables
+DETECTED_DISTRO=""
+DISTRO_SCRIPT=""
 
 # Banner
 display_banner() {
@@ -31,28 +36,77 @@ display_banner() {
     ╔═══════════════════════════════════════════════════════════════╗
     ║                     DOTFILES BOOTSTRAP                       ║
     ║                                                               ║
-    ║            Hyprland + Waybar + Catppuccin Setup              ║
+    ║      Multi-Distribution Desktop Environment Installer         ║
     ║                                                               ║
     ╚═══════════════════════════════════════════════════════════════╝
 EOF
 }
 
-# Check if running on Arch Linux
-check_system() {
-    log_info "Checking system compatibility..."
+# Detect Linux distribution
+detect_distribution() {
+    log_info "Detecting Linux distribution..."
     
-    if ! command -v pacman &> /dev/null; then
-        log_error "This script is designed for Arch Linux systems with pacman."
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        case "$ID" in
+            "arch")
+                DETECTED_DISTRO="arch"
+                DISTRO_SCRIPT="$DISTROS_DIR/arch/arch-install.sh"
+                ;;
+            "manjaro")
+                DETECTED_DISTRO="arch"  # Manjaro uses pacman like Arch
+                DISTRO_SCRIPT="$DISTROS_DIR/arch/arch-install.sh"
+                ;;
+            "ubuntu"|"debian"|"pop"|"elementary")
+                DETECTED_DISTRO="debian"
+                DISTRO_SCRIPT="$DISTROS_DIR/debian/debian-install.sh"
+                log_warning "Debian-based distributions not yet fully supported"
+                ;;
+            "fedora"|"centos"|"rhel")
+                DETECTED_DISTRO="fedora"
+                DISTRO_SCRIPT="$DISTROS_DIR/fedora/fedora-install.sh"
+                log_warning "Red Hat-based distributions not yet fully supported"
+                ;;
+            "nixos")
+                DETECTED_DISTRO="nixos"
+                DISTRO_SCRIPT="$DISTROS_DIR/nixos/nixos-install.sh"
+                log_warning "NixOS not yet fully supported"
+                ;;
+            *)
+                log_error "Unsupported distribution: $ID"
+                log_info "Currently supported: Arch Linux (including Manjaro)"
+                log_info "Planned support: Debian/Ubuntu, Fedora, NixOS"
+                exit 1
+                ;;
+        esac
+    else
+        log_error "Cannot detect distribution (/etc/os-release not found)"
         exit 1
     fi
     
-    log_success "Arch Linux detected"
+    log_success "Detected: $ID (using $DETECTED_DISTRO installer)"
+}
+
+# Check if distribution installer exists
+check_distro_installer() {
+    if [[ ! -f "$DISTRO_SCRIPT" ]]; then
+        log_error "Distribution installer not found: $DISTRO_SCRIPT"
+        log_info "Available installers:"
+        find "$DISTROS_DIR" -name "*-install.sh" -type f | sed 's|.*/||' | sort
+        exit 1
+    fi
+    
+    if [[ ! -x "$DISTRO_SCRIPT" ]]; then
+        chmod +x "$DISTRO_SCRIPT"
+    fi
 }
 
 # Make scripts executable
 make_scripts_executable() {
     log_info "Making setup scripts executable..."
     find "$SETUP_DIR" -name "*.sh" -type f -exec chmod +x {} \;
+    find "$DISTROS_DIR" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
+    find "$SCRIPT_DIR/window_managers" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
     log_success "Setup scripts are now executable"
 }
 
@@ -230,11 +284,14 @@ backup_existing_configs() {
     log_success "Backup created at $BACKUP_DIR"
 }
 
-# Interactive menu
-interactive_menu() {
+# Legacy mode for backward compatibility
+legacy_mode() {
+    log_warning "Running in legacy mode (Arch Linux + Hyprland only)"
+    log_info "For the new multi-WM installer, use: $DISTRO_SCRIPT"
+    
     echo
-    log_header "INSTALLATION OPTIONS"
-    echo "1. Full installation (recommended for new systems)"
+    log_header "LEGACY INSTALLATION OPTIONS"
+    echo "1. Full Hyprland installation (recommended)"
     echo "2. Install packages only"
     echo "3. Deploy dotfiles only"
     echo "4. Setup themes only"
@@ -251,7 +308,7 @@ interactive_menu() {
     
     case $choice in
         1)
-            log_info "Starting full installation..."
+            log_info "Starting full Hyprland installation..."
             backup_existing_configs
             install_packages
             setup_themes
@@ -327,9 +384,27 @@ interactive_menu() {
     esac
 }
 
-# Final instructions
+# Modern installation (use distro-specific installer)
+modern_installation() {
+    log_header "MODERN MULTI-WM INSTALLER"
+    log_info "Launching distribution-specific installer..."
+    log_info "Installer: $DISTRO_SCRIPT"
+    echo
+    
+    read -p "Continue with modern installer? (Y/n): " choice
+    if [[ "$choice" =~ ^[Nn]$ ]]; then
+        log_info "Falling back to legacy mode..."
+        return 1
+    fi
+    
+    # Execute the distribution-specific installer
+    bash "$DISTRO_SCRIPT" "$@"
+    exit $?
+}
+
+# Final instructions for legacy mode
 show_final_instructions() {
-    log_success "Setup completed!"
+    log_success "Legacy setup completed!"
     echo
     log_info "Next steps:"
     echo "1. Reboot your system to ensure all changes take effect"
@@ -347,6 +422,8 @@ show_final_instructions() {
     log_info "To update configs: edit files in ~/dotfiles/ and run 'stow -t ~ <package>'"
     echo
     log_warning "If you encounter any issues, check the backup at ~/.config-backup-*"
+    echo
+    log_info "For future installations, consider using: $DISTRO_SCRIPT"
 }
 
 # Main execution
@@ -354,14 +431,39 @@ main() {
     display_banner
     echo
     
-    check_system
+    detect_distribution
+    check_distro_installer
     make_scripts_executable
     
     # Check for command line arguments
     if [[ $# -eq 0 ]]; then
-        interactive_menu
+        # Try modern installer first
+        if modern_installation "$@"; then
+            exit 0
+        else
+            # Fall back to legacy mode
+            if [[ "$DETECTED_DISTRO" == "arch" ]]; then
+                legacy_mode
+            else
+                log_error "Legacy mode only available for Arch Linux"
+                log_info "Please use the distribution-specific installer: $DISTRO_SCRIPT"
+                exit 1
+            fi
+        fi
     else
         case "$1" in
+            --modern|--new)
+                shift  # Remove the flag from arguments
+                modern_installation "$@"
+                ;;
+            --legacy)
+                if [[ "$DETECTED_DISTRO" != "arch" ]]; then
+                    log_error "Legacy mode only available for Arch Linux"
+                    exit 1
+                fi
+                shift  # Remove the flag
+                legacy_command_line "$@"
+                ;;
             --full)
                 backup_existing_configs
                 install_packages
@@ -430,17 +532,21 @@ main() {
             --help)
                 echo "Usage: $0 [option]"
                 echo "Options:"
-                echo "  --full      : Full installation"
-                echo "  --packages  : Install packages only"
-                echo "  --dotfiles  : Deploy dotfiles only"  
-                echo "  --themes    : Setup themes only"
-                echo "  --system    : Configure system only"
-                echo "  --git       : Setup git only"
-                echo "  --sddm      : Setup SDDM display manager only"
-                echo "  --zsh       : Setup Zsh shell only"
-                echo "  --python-deps : Setup Python build dependencies only"
-                echo "  --gaming    : Install gaming setup (Steam + drivers + GE-Proton)"
+                echo "  --modern    : Use new multi-WM installer (default)"
+                echo "  --legacy    : Use legacy Hyprland-only installer (Arch only)"
+                echo "  --full      : Full Hyprland installation (legacy)"
+                echo "  --packages  : Install packages only (legacy)"
+                echo "  --dotfiles  : Deploy dotfiles only (legacy)"
+                echo "  --themes    : Setup themes only (legacy)"
+                echo "  --system    : Configure system only (legacy)"
+                echo "  --git       : Setup git only (legacy)"
+                echo "  --sddm      : Setup SDDM display manager only (legacy)"
+                echo "  --zsh       : Setup Zsh shell only (legacy)"
+                echo "  --python-deps : Setup Python build dependencies only (legacy)"
+                echo "  --gaming    : Install gaming setup (legacy)"
                 echo "  --help      : Show this help"
+                echo ""
+                echo "For multi-window manager support, use: $DISTRO_SCRIPT"
                 exit 0
                 ;;
             *)
@@ -452,6 +558,29 @@ main() {
     fi
     
     show_final_instructions
+}
+
+# Handle legacy command line arguments
+legacy_command_line() {
+    if [[ $# -eq 0 ]]; then
+        legacy_mode
+        return
+    fi
+    
+    # Process remaining legacy arguments here
+    case "$1" in
+        --full)
+            backup_existing_configs
+            install_packages
+            setup_themes
+            configure_system
+            deploy_dotfiles
+            ;;
+        *)
+            log_error "Unknown legacy option: $1"
+            exit 1
+            ;;
+    esac
 }
 
 # Run main function
