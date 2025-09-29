@@ -270,10 +270,28 @@ install_window_manager() {
             fi
             ;;
         dwl)
-            if [[ -x "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh" ]]; then
-                bash "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh"
+            # Detect package manager and use appropriate DWL installer
+            if command -v dnf >/dev/null 2>&1; then
+                # Fedora system - use Fedora-specific installer
+                if [[ -x "$DOTFILES_DIR/window_managers/dwl/install-dwl-fedora.sh" ]]; then
+                    log_info "Using Fedora-specific DWL installer"
+                    bash "$DOTFILES_DIR/window_managers/dwl/install-dwl-fedora.sh"
+                else
+                    log_error "Fedora DWL installer not found"; exit 1
+                fi
+            elif command -v pacman >/dev/null 2>&1; then
+                # Arch system - use Arch-specific installer
+                if [[ -x "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh" ]]; then
+                    log_info "Using Arch-specific DWL installer"
+                    bash "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh"
+                else
+                    log_error "Arch DWL installer not found"; exit 1
+                fi
             else
-                log_error "DWL installer not found"; exit 1
+                log_error "Unsupported distribution for DWL installation"
+                log_error "DWL requires either dnf (Fedora) or pacman (Arch) package manager"
+                log_info "You can install DWL manually from https://github.com/djpohly/dwl"
+                exit 1
             fi
             ;;
         *)

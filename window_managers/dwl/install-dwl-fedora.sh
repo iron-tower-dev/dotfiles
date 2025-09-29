@@ -1,12 +1,9 @@
 #!/bin/bash
 
-# DWL Installation Script
+# DWL Installation Script for Fedora
 # DWL is the Wayland equivalent of DWM - suckless dynamic window manager for Wayland
 # 
-# NOTE: This installer supports multiple distributions:
-#       - Arch-based systems (pacman) - handled directly by this script
-#       - Fedora systems (dnf) - delegates to install-dwl-fedora.sh
-#       For other distributions, install DWL manually from https://github.com/djpohly/dwl
+# NOTE: This installer is designed for Fedora systems using dnf
 
 set -euo pipefail
 
@@ -26,69 +23,44 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 BUILD_DIR="$HOME/.local/src"
 DWL_DIR="$BUILD_DIR/dwl"
 
-# Detect distribution and delegate to appropriate installer
-detect_and_delegate() {
-    local script_dir="$(dirname "$(realpath "$0")")" # Get directory of this script
+# Install build dependencies for Fedora
+install_build_deps() {
+    log_info "Installing build dependencies for DWL on Fedora..."
     
-    if command -v dnf >/dev/null 2>&1; then
-        # Fedora system - delegate to Fedora installer
-        local fedora_installer="$script_dir/install-dwl-fedora.sh"
-        if [[ -x "$fedora_installer" ]]; then
-            log_info "Detected Fedora system - delegating to Fedora DWL installer"
-            exec "$fedora_installer" "$@"
-        else
-            log_error "Fedora DWL installer not found at $fedora_installer"
-            log_info "Please ensure install-dwl-fedora.sh exists in the same directory"
-            exit 1
-        fi
-    elif ! command -v pacman >/dev/null 2>&1; then
-        log_error "Unsupported distribution for DWL installation"
-        log_error "This installer supports Arch-based systems (pacman) and Fedora (dnf)"
-        log_info "Available installers:"
-        log_info "  - install-dwl.sh (Arch/pacman)"
-        log_info "  - install-dwl-fedora.sh (Fedora/dnf)"
-        log_info "For other distributions, install DWL manually from https://github.com/djpohly/dwl"
+    # Check if running on Fedora system
+    if ! command -v dnf >/dev/null 2>&1; then
+        log_error "This DWL installer is designed for Fedora systems (dnf)."
+        log_error "For other distributions, please use the appropriate installer or install DWL manually."
         exit 1
     fi
     
-    # Continue with Arch installation if we reach here
-    log_info "Detected Arch-based system - proceeding with Arch installation"
-}
-
-# Install build dependencies
-install_build_deps() {
-    log_info "Installing build dependencies for DWL on Arch..."
+    # Install development tools and libraries needed for DWL
+    sudo dnf groupinstall -y "Development Tools" "C Development Tools and Libraries"
     
-    # We already validated pacman exists in detect_and_delegate
-    # This is now Arch-specific
-    
-    sudo pacman -S --needed --noconfirm \
-        base-devel \
+    sudo dnf install -y \
         git \
-        wayland \
-        wayland-protocols \
-        wlroots \
-        libxkbcommon \
-        pixman \
-        libdrm \
-        xorg-xwayland \
-        pkgconf \
-        scdoc
+        gcc \
+        make \
+        pkgconf-pkg-config \
+        wayland-devel \
+        wayland-protocols-devel \
+        wlroots-devel \
+        libxkbcommon-devel \
+        pixman-devel \
+        libdrm-devel \
+        xorg-x11-server-Xwayland \
+        scdoc \
+        pango-devel \
+        cairo-devel
     
     log_success "Build dependencies installed"
 }
 
-# Install Wayland tools
+# Install Wayland tools for Fedora
 install_wayland_tools() {
     log_info "Installing Wayland tools and utilities..."
     
-    # Arch check should have been done in install_build_deps, but double-check for safety
-    if ! command -v pacman >/dev/null 2>&1; then
-        log_error "pacman not found - this installer requires an Arch-based system"
-        exit 1
-    fi
-    
-    sudo pacman -S --needed --noconfirm \
+    sudo dnf install -y \
         alacritty \
         foot \
         wofi \
@@ -142,7 +114,7 @@ create_dwl_config() {
     # Backup original config if it exists
     [[ -f config.h ]] && cp config.h config.h.backup
     
-    # Create our customized config.h
+    # Create our customized config.h (same as Arch version but verified for Fedora)
     cat > config.h << 'EOF'
 /* Taken from https://github.com/djpohly/dwl/blob/main/config.def.h */
 #define COLOR(hex)    { ((hex >> 24) & 0xFF) / 255.0f, \
@@ -208,7 +180,7 @@ static const enum libinput_config_scroll_method scroll_method = LIBINPUT_CONFIG_
 
 /* You can choose between:
 LIBINPUT_CONFIG_CLICK_METHOD_NONE, LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS,
-LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINGER
+LIBINPUT_CONFIG_CLICK_METHOD_CLICKFINDER
 */
 static const enum libinput_config_click_method click_method = LIBINPUT_CONFIG_CLICK_METHOD_BUTTON_AREAS;
 
@@ -451,47 +423,36 @@ EOF
     log_success "DWL Wayland session created"
 }
 
-# Install additional optional tools
+# Install additional optional tools (Fedora-specific packages)
 install_optional_tools() {
     log_info "Installing optional Wayland tools..."
     
     # Ask user about optional packages
     echo
     log_info "Optional tools (recommended):"
-    echo "- wbg: wallpaper setter (will fallback to swaybg if not available)"
-    echo "- wlopm: output power management (idle timeout will skip display power control if not available)"
     echo "- brightnessctl: brightness control"
+    echo "- playerctl: media control"
+    echo "- wbg/swaybg: wallpaper setters (swaybg available in Fedora repos)"
     
     read -p "Install optional tools? (Y/n): " install_optional
     
     if [[ ! "$install_optional" =~ ^[Nn]$ ]]; then
-        # Install from AUR if available, otherwise skip
-        if command -v yay &> /dev/null; then
-            yay -S --needed --noconfirm \
-                wbg \
-                wlopm-git \
-                brightnessctl || log_warning "Some optional tools may not be available"
-        elif command -v paru &> /dev/null; then
-            paru -S --needed --noconfirm \
-                wbg \
-                wlopm-git \
-                brightnessctl || log_warning "Some optional tools may not be available"
-        else
-            # Install what's available from official repos
-            sudo pacman -S --needed --noconfirm \
-                brightnessctl || log_warning "Some optional tools not available without AUR helper"
-            log_warning "wbg and wlopm require an AUR helper (yay/paru) for installation"
-        fi
+        # Install available packages from Fedora repos
+        sudo dnf install -y \
+            brightnessctl \
+            playerctl \
+            thunar \
+            rofi || log_warning "Some optional tools may not be available"
+            
+        log_info "Note: wbg is not available in Fedora repos. Using swaybg as fallback."
+        log_info "If you want wbg, you can build it from source: https://codeberg.org/dnkl/wbg"
     fi
 }
 
 main() {
-    echo "Installing DWL (Dynamic Window Manager for Wayland)..."
+    echo "Installing DWL (Dynamic Window Manager for Wayland) on Fedora..."
     echo "DWL is the Wayland equivalent of DWM - a minimalist tiling window manager."
     echo
-    
-    # Check distribution and delegate if needed
-    detect_and_delegate "$@"
     
     install_build_deps
     install_wayland_tools
