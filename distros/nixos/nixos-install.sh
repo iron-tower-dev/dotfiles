@@ -177,6 +177,10 @@ generate_system_config() {
     
     local config_file="/tmp/nixos-dotfiles-config.nix"
     
+    # Derive state version (fallback to a sane default if not on NixOS yet)
+    STATE_VERSION="$(nixos-version 2>/dev/null | awk '{print $1}' | cut -d. -f1,2 || echo '24.05')"
+    log_info "Using NixOS state version: $STATE_VERSION"
+    
     log_info "Creating system configuration template..."
     
     cat > "$config_file" << EOF
@@ -187,7 +191,7 @@ generate_system_config() {
 
 let
   # Define the Home Manager configuration URL
-  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/release-23.11.tar.gz";
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/release-$STATE_VERSION.tar.gz";
 in
 {
   imports = [
@@ -319,7 +323,7 @@ $(generate_window_manager_config)
   #     userName = "Your Name";
   #     userEmail = "your.email@example.com";
   #   };
-  #   home.stateVersion = "23.11";
+  #   home.stateVersion = "$STATE_VERSION";
   # };
   
   # Configure fonts
@@ -489,6 +493,10 @@ generate_home_manager_config() {
     
     mkdir -p "$home_config_dir"
     
+    # Derive Home Manager state version
+    HM_STATE_VERSION="$(nixos-version 2>/dev/null | awk '{print $1}' | cut -d. -f1,2 || echo '24.05')"
+    log_info "Using Home Manager state version: $HM_STATE_VERSION"
+    
     log_info "Creating home-manager configuration..."
     
     cat > "$home_config_file" << EOF
@@ -508,7 +516,7 @@ generate_home_manager_config() {
   # This value determines the Home Manager release that your configuration is
   # compatible with. This helps avoid breakage when a new Home Manager release
   # introduces backwards incompatible changes.
-  home.stateVersion = "23.11"; # Adjust to your NixOS version
+  home.stateVersion = "$HM_STATE_VERSION"; # Dynamically detected NixOS version
   
   # Packages to install
   home.packages = with pkgs; [

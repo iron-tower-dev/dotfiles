@@ -340,6 +340,10 @@ EOF
 generate_host_configuration() {
     log_info "Generating host configuration for $HOSTNAME..."
     
+    # Derive state versions once (fallback to a sane default if not on NixOS yet)
+    STATE_VERSION="$(nixos-version 2>/dev/null | awk '{print $1}' | cut -d. -f1,2 || echo '24.05')"
+    log_info "Using NixOS state version: $STATE_VERSION"
+    
     cat > "$NIXOS_CONFIG_DIR/hosts/$HOSTNAME/configuration.nix" << EOF
 # Host configuration for $HOSTNAME
 { config, pkgs, inputs, ... }:
@@ -406,7 +410,7 @@ fi)
   # settings for stateful data, like file locations and database versions
   # on your system were taken. It's perfectly fine and recommended to leave
   # this value at the release version of the first install of this system.
-  system.stateVersion = "23.11"; # Did you read the comment?
+  system.stateVersion = "$STATE_VERSION"; # Did you read the comment?
 }
 EOF
     
@@ -828,6 +832,10 @@ EOF
 generate_user_home_config() {
     log_info "Generating home-manager configuration for user $USERNAME..."
     
+    # Home Manager typically tracks NixOS release; adjust if you prefer pinning HM separately
+    HM_STATE_VERSION="$(nixos-version 2>/dev/null | awk '{print $1}' | cut -d. -f1,2 || echo '24.05')"
+    log_info "Using Home Manager state version: $HM_STATE_VERSION"
+    
     cat > "$NIXOS_CONFIG_DIR/users/$USERNAME/home.nix" << EOF
 { config, pkgs, inputs, ... }:
 
@@ -841,7 +849,7 @@ generate_user_home_config() {
   # configuration is compatible with. This helps avoid breakage
   # when a new Home Manager release introduces backwards
   # incompatible changes.
-  home.stateVersion = "23.11";
+  home.stateVersion = "$HM_STATE_VERSION";
 
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
