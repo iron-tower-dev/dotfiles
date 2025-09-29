@@ -520,16 +520,18 @@ setup_development_tools() {
 
         # Add shell activation lines idempotently after successful installation
         if command -v mise &>/dev/null; then
+            local mise_bin
+            mise_bin="$(command -v mise)"
             # Bash
             if [[ -f "$HOME/.bashrc" ]]; then
                 if ! grep -q 'mise activate bash' "$HOME/.bashrc"; then
-                    echo 'eval "$(~/.local/bin/mise activate bash)"' >> "$HOME/.bashrc"
+                    echo "eval \"\$(${mise_bin} activate bash)\"" >> "$HOME/.bashrc"
                 fi
             fi
             # Zsh
             if [[ -f "$HOME/.zshrc" ]]; then
                 if ! grep -q 'mise activate zsh' "$HOME/.zshrc"; then
-                    echo 'eval "$(~/.local/bin/mise activate zsh)"' >> "$HOME/.zshrc"
+                    echo "eval \"\$(${mise_bin} activate zsh)\"" >> "$HOME/.zshrc"
                 fi
             fi
         fi
