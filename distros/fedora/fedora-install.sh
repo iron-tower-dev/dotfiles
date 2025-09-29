@@ -259,6 +259,8 @@ install_window_manager() {
             # Qtile installer already supports multiple distributions including Fedora
             if [[ -x "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh" ]]; then
                 log_info "Using multi-distribution Qtile installer"
+                # Export environment hints to ensure proper detection
+                export DISTRO=fedora PACKAGE_MANAGER=dnf
                 bash "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh"
             else
                 log_error "Qtile installer not found"; exit 1
@@ -268,6 +270,8 @@ install_window_manager() {
             # DWM installer already supports multiple distributions including Fedora
             if [[ -x "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh" ]]; then
                 log_info "Using multi-distribution DWM installer"
+                # Export environment hints to ensure proper detection
+                export DISTRO=fedora PACKAGE_MANAGER=dnf
                 bash "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh"
             else
                 log_error "DWM installer not found"; exit 1

@@ -29,6 +29,13 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Detect package manager and distribution
 detect_system() {
+    # Use pre-set environment variables if available (e.g., from parent installer)
+    if [[ -n "${DISTRO:-}" && -n "${PACKAGE_MANAGER:-}" ]]; then
+        PKG_MANAGER="$PACKAGE_MANAGER"
+        log_success "Using pre-configured: $DISTRO with $PKG_MANAGER"
+        return
+    fi
+    
     if command -v pacman &> /dev/null; then
         DISTRO="arch"
         PKG_MANAGER="pacman"
