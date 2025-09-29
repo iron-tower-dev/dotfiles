@@ -46,11 +46,16 @@ install_dependencies() {
         git
         wayland
         wayland-protocols
-        wlroots
         libinput
         libxkbcommon
         pixman
         pkgconf
+        
+        # Additional build dependencies
+        libxcb
+        xcb-util-wm
+        libdrm
+        mesa
         
         # X11 support (for Xwayland)
         xorg-xwayland
@@ -102,18 +107,22 @@ install_dependencies() {
 build_dwl() {
     log_info "Building dwl from source..."
     
-    # Verify wlroots is installed
-    if ! pacman -Qi wlroots &>/dev/null; then
-        log_error "wlroots is not installed. Installing now..."
-        sudo pacman -S --needed --noconfirm wlroots
-        if [ $? -ne 0 ]; then
-            log_error "Failed to install wlroots"
-            log_info "Try manually: sudo pacman -S wlroots"
-            exit 1
+    # Install wlroots from AUR if not present
+    log_info "Checking for wlroots..."
+    if ! pkg-config --exists wlroots 2>/dev/null; then
+        log_warning "wlroots not found, attempting to install from AUR..."
+        
+        # Check for AUR helper
+        if command -v yay &> /dev/null; then
+            yay -S --needed --noconfirm wlroots || log_warning "Failed to install wlroots from AUR"
+        elif command -v paru &> /dev/null; then
+            paru -S --needed --noconfirm wlroots || log_warning "Failed to install wlroots from AUR"
+        else
+            log_warning "No AUR helper found, will attempt build anyway"
         fi
+    else
+        log_success "wlroots is available"
     fi
-    
-    log_success "wlroots is installed"
     
     local dwl_src="/tmp/dwl-build-$$"
     local dwl_config_src="$HOME/dotfiles/dwl/.config/dwl"
