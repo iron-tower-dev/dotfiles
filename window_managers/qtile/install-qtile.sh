@@ -165,10 +165,23 @@ install_qtile_debian() {
     sudo apt update
     
     # Install core packages from official repositories
+    # First, install qtile and python3-psutil which should be available everywhere
     sudo apt install -y \
         qtile \
-        python3-psutil \
-        python3-dbus-dev
+        python3-psutil
+    
+    # Try python3-dbus-next first (preferred), fallback to python3-dbus-dev
+    if ! sudo apt install -y python3-dbus-next 2>/dev/null; then
+        log_info "python3-dbus-next not available, trying python3-dbus-dev..."
+        if ! sudo apt install -y python3-dbus-dev 2>/dev/null; then
+            log_error "Both python3-dbus-next and python3-dbus-dev failed to install"
+            install_python_package_fallback "python3-dbus-next" "dbus-next" "false"
+        else
+            log_success "Installed python3-dbus-dev as fallback"
+        fi
+    else
+        log_success "Installed python3-dbus-next successfully"
+    fi
     
     # Try optional packages with fallbacks (these enable additional features)
     if ! sudo apt install -y python3-iwlib 2>/dev/null; then
