@@ -178,6 +178,9 @@ install_qtile_debian() {
             install_python_package_fallback "python3-dbus-next" "dbus-next" "false"
         else
             log_success "Installed python3-dbus-dev as fallback"
+            # Ensure the actual runtime package is available since python3-dbus-dev only provides headers
+            log_info "Installing dbus-next runtime package via UV after dev headers..."
+            install_python_package_fallback "python3-dbus-next" "dbus-next" "false"
         fi
     else
         log_success "Installed python3-dbus-next successfully"
