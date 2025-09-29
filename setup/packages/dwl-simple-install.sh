@@ -39,27 +39,39 @@ fi
 log_info "Using AUR helper: $AUR_HELPER"
 echo ""
 
-# Install dwl-git from AUR
-log_info "Installing dwl-git from AUR..."
-log_info "This will also install wlroots and all other dependencies"
+# Try dwl (stable) first, then dwl-git as fallback
+log_info "Checking available dwl packages..."
 echo ""
 
-$AUR_HELPER -S --needed dwl-git
+# Try stable version first
+log_info "Attempting to install dwl (stable) from AUR..."
+log_info "This will install compatible wlroots version"
+echo ""
 
-if [ $? -eq 0 ]; then
-    echo ""
-    log_success "dwl installed successfully!"
-    echo ""
-    log_info "dwl binary location: $(which dwl)"
-    echo ""
-    log_info "Next steps:"
-    echo "  1. Deploy configuration: cd ~/dotfiles && stow dwl"
-    echo "  2. Log out and select 'dwl' from your display manager"
-    echo ""
-    log_info "To customize dwl configuration, use: dwl-rebuild"
+if $AUR_HELPER -S --needed dwl 2>/dev/null; then
+    PACKAGE="dwl"
 else
-    echo ""
-    log_error "Installation failed"
-    log_info "Try manual installation: $AUR_HELPER -S dwl-git"
-    exit 1
+    log_warning "dwl (stable) not available, trying dwl-git..."
+    if $AUR_HELPER -S --needed dwl-git; then
+        PACKAGE="dwl-git"
+    else
+        log_error "Both dwl and dwl-git failed to install"
+        echo ""
+        log_info "Possible solutions:"
+        echo "  1. Check AUR package availability: $AUR_HELPER -Ss dwl"
+        echo "  2. Try manual installation: $AUR_HELPER -S dwl"
+        echo "  3. Install specific wlroots version if needed"
+        exit 1
+    fi
 fi
+
+echo ""
+log_success "$PACKAGE installed successfully!"
+echo ""
+log_info "dwl binary location: $(which dwl)"
+echo ""
+log_info "Next steps:"
+echo "  1. Deploy configuration: cd ~/dotfiles && stow dwl"
+echo "  2. Log out and select 'dwl' from your display manager"
+echo ""
+log_info "To customize dwl configuration, use: dwl-rebuild"
