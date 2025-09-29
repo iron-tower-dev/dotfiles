@@ -107,19 +107,25 @@ install_dependencies() {
 build_dwl() {
     log_info "Building dwl from source..."
     
-    # Install wlroots from AUR if not present
+    # Check for wlroots
     log_info "Checking for wlroots..."
     if ! pkg-config --exists wlroots 2>/dev/null; then
-        log_warning "wlroots not found, attempting to install from AUR..."
-        
-        # Check for AUR helper
-        if command -v yay &> /dev/null; then
-            yay -S --needed --noconfirm wlroots || log_warning "Failed to install wlroots from AUR"
-        elif command -v paru &> /dev/null; then
-            paru -S --needed --noconfirm wlroots || log_warning "Failed to install wlroots from AUR"
-        else
-            log_warning "No AUR helper found, will attempt build anyway"
-        fi
+        log_error "wlroots not found!"
+        echo ""
+        log_info "dwl requires wlroots to be installed."
+        log_info "You have a few options:"
+        echo ""
+        echo "  Option 1 - Install wlroots from AUR:"
+        echo "    yay -S wlroots"
+        echo ""
+        echo "  Option 2 - Install dwl-git (includes dependencies):"
+        echo "    yay -S dwl-git"
+        echo ""
+        echo "  Option 3 - Build wlroots manually:"
+        echo "    https://gitlab.freedesktop.org/wlroots/wlroots"
+        echo ""
+        log_warning "After installing wlroots, run this script again."
+        exit 1
     else
         log_success "wlroots is available"
     fi
