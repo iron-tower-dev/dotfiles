@@ -342,10 +342,30 @@ configure_fish_shell() {
 configure_zsh_shell() {
     log_info "Configuring Zsh shell..."
     
-    # Install oh-my-zsh if it doesn't exist
+    # Prefer distro packages required for Zsh ecosystem
+    if ! rpm -q zsh &>/dev/null; then
+        log_info "Installing zsh via dnf..."
+        sudo dnf install -y zsh || log_warn "Could not install zsh via dnf; continuing if already present."
+    fi
+    if ! command -v git &>/dev/null; then
+        log_info "Installing git via dnf (required for oh-my-zsh clone)..."
+        sudo dnf install -y git || true
+    fi
+
+    # Install oh-my-zsh using a git clone (avoids piping remote script to shell)
     if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-        log_info "Installing Oh My Zsh..."
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || true
+        log_info "Installing Oh My Zsh via git clone..."
+        tmpdir="$(mktemp -d)"
+        trap 'rm -rf "$tmpdir"' RETURN
+        if git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"; then
+            # Initialize a basic .zshrc if not present
+            if [[ ! -f "$HOME/.zshrc" ]]; then
+                cp "$HOME/.oh-my-zsh/templates/zshrc.zsh-template" "$HOME/.zshrc"
+            fi
+            log_success "Oh My Zsh installed"
+        else
+            log_warn "Failed to clone Oh My Zsh; skipping installation"
+        fi
     fi
     
     log_success "Zsh shell configured"
@@ -354,19 +374,177 @@ configure_zsh_shell() {
 # Setup development tools
 setup_development_tools() {
     log_info "Setting up development tools..."
-    
-    # Install mise (modern tool version manager)
-    if ! command -v mise &> /dev/null; then
-        log_info "Installing mise..."
-        curl -fsSL https://mise.run | sh
-        echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
-        echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc
+
+    is_interactive=false
+    if [[ -t 1 ]]; then
+        is_interactive=true
     fi
-    
+
+    confirm_install() {
+        local prompt_msg="$1"
+        if $is_interactive; then
+            read -r -p "$prompt_msg [y/N]: " reply
+            [[ "$reply" =~ ^[Yy]$ ]] || return 1
+        fi
+        return 0
+    }
+
+    download_and_verify() {
+        # Args: url checksum_url dest_file
+        local url="$1" checksum_url="$2" dest="$3"
+        local tmpdir
+        tmpdir="$(mktemp -d)" || return 1
+        trap 'rm -rf "$tmpdir"' RETURN
+        local sumfile="$tmpdir/SHA256SUM"
+        log_info "Downloading: $url"
+        curl -fL "$url" -o "$dest" || { log_error "Download failed: $url"; return 1; }
+        log_info "Fetching checksum: $checksum_url"
+        curl -fL "$checksum_url" -o "$sumfile" || { log_error "Failed to fetch checksum"; return 1; }
+        # The checksum file may contain either "<sha>  <filename>" or just the digest; normalize
+        if grep -qE "^[0-9a-fA-F]{64}\\s+" "$sumfile"; then
+            # If the checksum file contains filename, ensure it matches our dest basename
+            if ! grep -q "$(basename "$dest")" "$sumfile"; then
+                # Create a matching line
+                local sha
+                sha="$(head -n1 "$sumfile" | awk '{print $1}')"
+                echo "$sha  $(basename "$dest")" > "$sumfile"
+            fi
+            (cd "$(dirname "$dest")" && sha256sum -c "$sumfile") || { log_error "Checksum verification failed"; return 1; }
+        else
+            # Single-line sha; compute and compare
+            local expected
+            expected="$(tr -d '\n\r' < "$sumfile")"
+            local actual
+            actual="$(sha256sum "$dest" | awk '{print $1}')"
+            if [[ "$expected" != "$actual" ]]; then
+                log_error "Checksum mismatch: expected $expected got $actual"; return 1
+            fi
+        fi
+        return 0
+    }
+
+    install_mise_from_pkg=false
+    if ! command -v mise &> /dev/null; then
+        # Prefer distro package if available
+        if dnf list --available mise &>/dev/null; then
+            log_info "Installing mise via dnf..."
+            if sudo dnf install -y mise; then
+                install_mise_from_pkg=true
+                log_success "mise installed via dnf"
+            else
+                log_warn "Failed to install mise via dnf; will attempt manual install"
+            fi
+        fi
+
+        if ! $install_mise_from_pkg; then
+            log_info "Installing mise from verified release artifact..."
+            local os arch target url sum_url tmpbin
+            os="linux"
+            case "$(uname -m)" in
+                x86_64|amd64) arch="x86_64" ;;
+                aarch64|arm64) arch="aarch64" ;;
+                *) arch="x86_64" ;;
+            esac
+            target="mise-${os}-${arch}.tar.xz"
+            url="https://github.com/jdx/mise/releases/latest/download/${target}"
+            sum_url="${url}.sha256"
+            tmpbin="$(mktemp)"
+            if download_and_verify "$url" "$sum_url" "$tmpbin"; then
+                # Extract and install to ~/.local/bin
+                local tmpd
+                tmpd="$(mktemp -d)"
+                tar -xJf "$tmpbin" -C "$tmpd" || { log_error "Failed to extract mise archive"; rm -rf "$tmpd"; return 1; }
+                mkdir -p "$HOME/.local/bin"
+                if install -m 0755 "$tmpd"/mise "$HOME/.local/bin/mise"; then
+                    log_success "mise installed to ~/.local/bin/mise"
+                else
+                    log_error "Failed to install mise binary"; rm -rf "$tmpd"; return 1
+                fi
+                rm -rf "$tmpd"
+            else
+                log_error "mise download/verification failed"; return 1
+            fi
+        fi
+
+        # Add shell activation lines idempotently after successful installation
+        if command -v mise &>/dev/null; then
+            # Bash
+            if [[ -f "$HOME/.bashrc" ]]; then
+                if ! grep -q 'mise activate bash' "$HOME/.bashrc"; then
+                    echo 'eval "$(~/.local/bin/mise activate bash)"' >> "$HOME/.bashrc"
+                fi
+            fi
+            # Zsh
+            if [[ -f "$HOME/.zshrc" ]]; then
+                if ! grep -q 'mise activate zsh' "$HOME/.zshrc"; then
+                    echo 'eval "$(~/.local/bin/mise activate zsh)"' >> "$HOME/.zshrc"
+                fi
+            fi
+        fi
+    fi
+
     # Install UV for Python package management
     if ! command -v uv &> /dev/null; then
-        log_info "Installing UV (Python package manager)..."
-        curl -fsSL https://astral.sh/uv/install.sh | sh
+        # Prefer distro package first
+        if dnf list --available uv &>/dev/null; then
+            log_info "Installing uv via dnf..."
+            if sudo dnf install -y uv; then
+                log_success "uv installed via dnf"
+            else
+                log_warn "Failed to install uv via dnf; will attempt manual install"
+            fi
+        fi
+
+        if ! command -v uv &>/dev/null; then
+            log_info "Installing uv from verified release artifact..."
+            local arch triple target url sum_url tmpbin
+            case "$(uname -m)" in
+                x86_64|amd64) arch="x86_64-unknown-linux-gnu" ;;
+                aarch64|arm64) arch="aarch64-unknown-linux-gnu" ;;
+                *) arch="x86_64-unknown-linux-gnu" ;;
+            esac
+            target="uv-${arch}.tar.xz"
+            url="https://github.com/astral-sh/uv/releases/latest/download/${target}"
+            sum_url="${url}.sha256"
+            tmpbin="$(mktemp)"
+
+            if $is_interactive; then
+                if ! confirm_install "Download and install uv from ${url}?"; then
+                    log_warn "User declined uv installation"
+                else
+                    if download_and_verify "$url" "$sum_url" "$tmpbin"; then
+                        local tmpd
+                        tmpd="$(mktemp -d)"
+                        tar -xJf "$tmpbin" -C "$tmpd" || { log_error "Failed to extract uv archive"; rm -rf "$tmpd"; return 1; }
+                        mkdir -p "$HOME/.local/bin"
+                        if install -m 0755 "$tmpd"/uv "$HOME/.local/bin/uv"; then
+                            log_success "uv installed to ~/.local/bin/uv"
+                        else
+                            log_error "Failed to install uv binary"; rm -rf "$tmpd"; return 1
+                        fi
+                        rm -rf "$tmpd"
+                    else
+                        log_error "uv download/verification failed"; return 1
+                    fi
+                fi
+            else
+                # Non-interactive: proceed after verification
+                if download_and_verify "$url" "$sum_url" "$tmpbin"; then
+                    local tmpd
+                    tmpd="$(mktemp -d)"
+                    tar -xJf "$tmpbin" -C "$tmpd" || { log_error "Failed to extract uv archive"; rm -rf "$tmpd"; return 1; }
+                    mkdir -p "$HOME/.local/bin"
+                    if install -m 0755 "$tmpd"/uv "$HOME/.local/bin/uv"; then
+                        log_success "uv installed to ~/.local/bin/uv"
+                    else
+                        log_error "Failed to install uv binary"; rm -rf "$tmpd"; return 1
+                    fi
+                    rm -rf "$tmpd"
+                else
+                    log_error "uv download/verification failed"; return 1
+                fi
+            fi
+        fi
     fi
     
     log_success "Development tools configured"
