@@ -207,8 +207,20 @@ cat << 'WAYLAND_CONFIG'
       wayland = true;
     };
   };
+WAYLAND_CONFIG
+else
+cat << 'X11_CONFIG'
+  services.xserver = {
+    enable = true;
+    displayManager.gdm.enable = true;
+    
+    # Enable touchpad support (enabled default in most desktopManager).
+    libinput.enable = true;
+  };
+X11_CONFIG
+fi)
   
-  # Display server specific configuration and packages
+  # System packages for all configurations
   environment.systemPackages = with pkgs; [
 $(if [[ "$SELECTED_DISPLAY_SERVER" == "wayland" ]]; then
 cat << 'WAYLAND_PACKAGES'
@@ -273,18 +285,6 @@ fi)
     
 $(generate_window_manager_packages)
   ];
-WAYLAND_CONFIG
-else
-cat << 'X11_CONFIG'
-  services.xserver = {
-    enable = true;
-    displayManager.gdm.enable = true;
-    
-    # Enable touchpad support (enabled default in most desktopManager).
-    libinput.enable = true;
-  };
-X11_CONFIG
-fi)
 $(generate_window_manager_config)
   
   # Enable sound with pipewire
