@@ -263,7 +263,9 @@ install_window_manager() {
             fi
             ;;
         dwm)
+            # DWM installer already supports multiple distributions including Fedora
             if [[ -x "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh" ]]; then
+                log_info "Using multi-distribution DWM installer"
                 bash "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh"
             else
                 log_error "DWM installer not found"; exit 1
