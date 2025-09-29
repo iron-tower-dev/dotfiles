@@ -13,9 +13,9 @@ All old dwl configurations have been removed. This is a completely new setup fro
    - Creates all configuration files
 
 2. **Configuration Directory**: `dwl/.config/`
-   - yambar status bar (Catppuccin Macchiato)
-   - mako notifications (Catppuccin Macchiato)
+   - foot terminal (Catppuccin Macchiato)
    - dwl config template (created during install)
+   - dunst notifications (from existing dotfiles)
 
 3. **Helper Scripts**: Created during installation
    - Application launcher
@@ -50,19 +50,17 @@ stow dwl
 - wlroots, wayland, wayland-protocols
 - xorg-xwayland (X11 compatibility)
 
-**Essential Tools:**
-- yambar (status bar)
-- mako (notifications)
-- bemenu (application launcher)
+**Essential Tools (suckless-style):**
+- foot (lightweight Wayland terminal)
+- bemenu (dmenu for Wayland)
+- dunst (lightweight notifications)
 - grim + slurp (screenshots)
 - swaybg (wallpaper)
 - swaylock (screen locker)
 
 **Utilities:**
 - wl-clipboard
-- brightnessctl
-- pamixer
-- alacritty (if not installed)
+- jq
 
 ### After Installation
 
@@ -87,14 +85,14 @@ stow dwl
    nvim ~/.config/dwl/autostart.sh
    ```
 
-4. **Adjust Status Bar**:
+4. **Configure Terminal**:
    ```bash
-   nvim ~/.config/yambar/config.yml
+   nvim ~/.config/foot/foot.ini
    ```
 
-5. **Configure Notifications**:
+5. **Configure Notifications** (uses your existing dunst config):
    ```bash
-   nvim ~/.config/mako/config
+   nvim ~/.config/dunst/dunstrc
    ```
 
 ### Default Keybindings
@@ -139,10 +137,13 @@ stow -D dwl
 
 ### Architecture
 
-This setup follows your dotfiles architecture:
+This setup follows the suckless philosophy:
+- Minimal, lightweight components
 - Uses GNU Stow for deployment
 - Catppuccin Macchiato theming throughout
-- Integrates with existing tools (alacritty, etc.)
+- foot terminal (fast, Wayland-native)
+- dwl's built-in status bar (no external bar needed)
+- Integrates with existing dunst notifications
 - SDDM display manager integration
 
 ### Resources

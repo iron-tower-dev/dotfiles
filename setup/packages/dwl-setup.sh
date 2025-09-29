@@ -46,30 +46,25 @@ install_dependencies() {
         git
         wayland
         wayland-protocols
-        wlroots
         libinput
         libxkbcommon
         pixman
+        pkgconf
         
         # X11 support (for Xwayland)
         xorg-xwayland
         
         # Essential Wayland utilities
         wl-clipboard
-        xdg-desktop-portal-wlr
         
-        # Terminal emulator (if not already installed)
-        alacritty
+        # Lightweight terminal emulator (suckless-style)
+        foot
         
-        # Application launcher
+        # Application launcher (suckless-style)
         bemenu
-        bemenu-wayland
         
-        # Status bar (yambar is a good simple option)
-        yambar
-        
-        # Notification daemon
-        mako
+        # Notification daemon (lightweight)
+        dunst
         
         # Screen locker
         swaylock
@@ -83,8 +78,6 @@ install_dependencies() {
         
         # Additional utilities
         jq
-        brightnessctl
-        pamixer
     )
     
     log_info "Checking which packages need to be installed..."
@@ -170,11 +163,11 @@ export QT_QPA_PLATFORM=wayland
 export SDL_VIDEODRIVER=wayland
 export _JAVA_AWT_WM_NONREPARENTING=1
 
-# Start status bar
-yambar &
+# dwl has a built-in status bar, no external bar needed
+# You can pipe status info to dwl if desired
 
 # Start notification daemon
-mako &
+dunst &
 
 # Set wallpaper
 if command -v swaybg &> /dev/null; then
@@ -309,7 +302,7 @@ stow dwl
 
 ## Default Keybindings
 
-- `Mod+Return` - Launch terminal (alacritty)
+- `Mod+Return` - Launch terminal (foot)
 - `Mod+p` - Launch application launcher (bemenu)
 - `Mod+Shift+c` - Close focused window
 - `Mod+j/k` - Focus next/previous window
@@ -348,11 +341,11 @@ Edit `~/.config/dwl/autostart.sh` to add programs that should start with dwl.
 
 ## Components
 
-- **Compositor**: dwl
-- **Status Bar**: yambar
-- **Notifications**: mako
-- **Launcher**: bemenu
-- **Terminal**: alacritty
+- **Compositor**: dwl (suckless Wayland compositor)
+- **Status Bar**: none (dwl's built-in bar)
+- **Notifications**: dunst (lightweight)
+- **Launcher**: bemenu (dmenu for Wayland)
+- **Terminal**: foot (fast, lightweight Wayland terminal)
 - **Screenshots**: grim + slurp
 
 ## Troubleshooting

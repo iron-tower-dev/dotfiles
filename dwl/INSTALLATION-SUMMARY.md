@@ -18,14 +18,9 @@
   - Integrates with SDDM display manager
 
 #### Configuration Files
-- **`dwl/.config/yambar/config.yml`**
-  - Status bar with Catppuccin Macchiato theme
-  - Shows workspaces, clock, network, volume, battery, brightness
-  
-- **`dwl/.config/mako/config`**
-  - Notification daemon with Catppuccin Macchiato theme
-  - Urgency levels (low, normal, critical)
-  - Application-specific styling
+- **`dwl/.config/foot/foot.ini`**
+  - Lightweight Wayland terminal with Catppuccin Macchiato theme
+  - Fast, minimal, suckless-style terminal
 
 - **`dwl/QUICKSTART.md`**
   - Quick start installation guide
@@ -148,11 +143,12 @@ ls -la ~/.config/mako/
 - **xorg-xwayland** - X11 compatibility layer
 
 ### Status Bar & Notifications
-- **yambar** - Lightweight Wayland status bar
-- **mako** - Notification daemon for Wayland
+- **dwl built-in bar** - No external status bar needed
+- **dunst** - Lightweight notification daemon (uses existing dotfiles config)
 
-### Application Launcher
-- **bemenu** + **bemenu-wayland** - Dynamic menu for Wayland
+### Terminal & Launcher
+- **foot** - Fast, lightweight Wayland-native terminal
+- **bemenu** - dmenu for Wayland (suckless-style)
 
 ### Utilities
 - **grim** - Screenshot utility
@@ -160,9 +156,7 @@ ls -la ~/.config/mako/
 - **swaybg** - Wallpaper setter
 - **swaylock** - Screen locker
 - **wl-clipboard** - Clipboard manager
-- **brightnessctl** - Brightness control
-- **pamixer** - Audio control
-- **alacritty** - Terminal emulator (if not installed)
+- **jq** - JSON processor
 
 ### Optional (for development)
 - **git** - Version control (for building)
@@ -182,10 +176,8 @@ dotfiles/
     │   ├── dwl/                      # Created during install
     │   │   ├── autostart.sh          # Startup script
     │   │   └── config.def.h          # dwl configuration
-    │   ├── yambar/
-    │   │   └── config.yml            # Status bar config
-    │   └── mako/
-    │       └── config                # Notification config
+    │   └── foot/
+    │       └── foot.ini              # Terminal config
     ├── .local/bin/                   # Created during install
     │   ├── dwl-launcher              # App launcher helper
     │   └── dwl-screenshot            # Screenshot helper
@@ -237,16 +229,16 @@ sudo make install
 nvim ~/.config/dwl/autostart.sh
 ```
 
-#### Edit Status Bar
+#### Edit Terminal
 ```bash
-nvim ~/.config/yambar/config.yml
-pkill yambar && yambar &
+nvim ~/.config/foot/foot.ini
 ```
 
 #### Edit Notifications
 ```bash
-nvim ~/.config/mako/config
-makoctl reload
+# Uses your existing dunst configuration from dotfiles
+nvim ~/.config/dunst/dunstrc
+pkill dunst && dunst &
 ```
 
 ## Theming
@@ -258,6 +250,15 @@ All configurations use **Catppuccin Macchiato** theme to match your existing dot
 - Green: `#a6da95`
 - Yellow: `#eed49f`
 - Red: `#ed8796`
+
+## Suckless Philosophy
+
+This setup embraces the suckless philosophy:
+- **Minimal**: Only essential components, no bloat
+- **Lightweight**: foot terminal, bemenu launcher, dwl's built-in bar
+- **Fast**: Wayland-native, optimized for performance
+- **Simple**: Easy to understand and customize
+- **Unix philosophy**: Do one thing well
 
 ## Troubleshooting
 
