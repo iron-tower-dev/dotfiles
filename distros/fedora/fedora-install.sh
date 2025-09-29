@@ -794,6 +794,14 @@ create_xinitrc() {
         return
     fi
     
+    # Compute default session command - Qtile requires "start" subcommand
+    local DEFAULT_SESSION
+    if [[ "$SELECTED_WINDOW_MANAGER" == "qtile" ]]; then
+        DEFAULT_SESSION="qtile start"
+    else
+        DEFAULT_SESSION="$SELECTED_WINDOW_MANAGER"
+    fi
+    
     cat > "$xinitrc" << EOF
 #!/bin/bash
 
@@ -815,7 +823,7 @@ case "\$1" in
         exec dwm
         ;;
     *)
-        exec $SELECTED_WINDOW_MANAGER
+        exec $DEFAULT_SESSION
         ;;
 esac
 EOF
