@@ -528,7 +528,7 @@ setup_development_tools() {
                 tmpd="$(mktemp -d)"
                 tar -xJf "$tmpbin" -C "$tmpd" || { log_error "Failed to extract mise archive"; rm -rf "$tmpd"; return 1; }
                 mkdir -p "$HOME/.local/bin"
-                if install -m 0755 "$tmpd"/mise "$HOME/.local/bin/mise"; then
+               if install -m 0755 "$tmpd"/mise/bin/mise "$HOME/.local/bin/mise"; then
                     log_success "mise installed to ~/.local/bin/mise"
                 else
                     log_error "Failed to install mise binary"; rm -rf "$tmpd"; return 1
