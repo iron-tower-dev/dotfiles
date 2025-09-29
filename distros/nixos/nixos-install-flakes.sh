@@ -694,19 +694,16 @@ EOF
 
 {
   # Graphics drivers (auto-detect)
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
+    enable32Bit = true;
+    extraPackages = with pkgs; [
+      intel-media-driver
+      vaapiIntel
+      vaapiVdpau
+      libvdpau-va-gl
+    ];
   };
-  
-  # Auto-detect graphics card
-  hardware.opengl.extraPackages = with pkgs; [
-    intel-media-driver
-    vaapiIntel
-    vaapiVdpau
-    libvdpau-va-gl
-  ];
 }
 EOF
 
