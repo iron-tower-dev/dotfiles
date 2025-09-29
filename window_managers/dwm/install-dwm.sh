@@ -1,0 +1,1163 @@
+#!/bin/bash
+
+# DWM Installation Script
+# Suckless dynamic window manager for X11
+# 
+# Supports multiple distributions: Arch Linux, Fedora, Debian/Ubuntu, NixOS
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Global variables
+DISTRO=""
+PKG_MANAGER=""
+
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Detect package manager and distribution
+detect_system() {
+    # Use pre-set environment variables if available (e.g., from parent installer)
+    if [[ -n "${DISTRO:-}" && -n "${PACKAGE_MANAGER:-}" ]]; then
+        PKG_MANAGER="$PACKAGE_MANAGER"
+        log_success "Using pre-configured: $DISTRO with $PKG_MANAGER"
+        return
+    fi
+    
+    if command -v pacman &> /dev/null; then
+        DISTRO="arch"
+        PKG_MANAGER="pacman"
+    elif command -v dnf &> /dev/null; then
+        DISTRO="fedora"
+        PKG_MANAGER="dnf"
+    elif command -v apt &> /dev/null; then
+        DISTRO="debian"
+        PKG_MANAGER="apt"
+    elif command -v nix-env &> /dev/null; then
+        DISTRO="nixos"
+        PKG_MANAGER="nix"
+    else
+        log_error "Unsupported distribution or package manager not found"
+        exit 1
+    fi
+    
+    log_success "Detected: $DISTRO with $PKG_MANAGER"
+}
+
+# Build directory
+BUILD_DIR="$HOME/.local/src"
+DWM_DIR="$BUILD_DIR/dwm"
+DMENU_DIR="$BUILD_DIR/dmenu"
+ST_DIR="$BUILD_DIR/st"
+
+# Install build dependencies on Arch Linux
+install_build_deps_arch() {
+    log_info "Installing build dependencies on Arch Linux..."
+    
+    # Check if running on Arch-based system
+    if ! command -v pacman >/dev/null 2>&1; then
+        log_error "This DWM installer function requires Arch-based systems (pacman)."
+        log_error "For other distributions, the script should have detected them automatically."
+        exit 1
+    fi
+    
+    sudo pacman -S --needed --noconfirm \
+        base-devel \
+        git \
+        libx11 \
+        libxft \
+        libxinerama \
+        freetype2 \
+        fontconfig
+    
+    log_success "Build dependencies installed"
+}
+
+# Install build dependencies on Fedora
+install_build_deps_fedora() {
+    log_info "Installing build dependencies on Fedora..."
+    
+    sudo dnf groupinstall -y "Development Tools"
+    sudo dnf install -y \
+        git \
+        libX11-devel \
+        libXft-devel \
+        libXinerama-devel \
+        freetype-devel \
+        fontconfig-devel \
+        make \
+        gcc
+    
+    log_success "Build dependencies installed"
+}
+
+# Install build dependencies on Debian/Ubuntu
+install_build_deps_debian() {
+    log_info "Installing build dependencies on Debian/Ubuntu..."
+    
+    sudo apt update
+    sudo apt install -y \
+        build-essential \
+        git \
+        libx11-dev \
+        libxft-dev \
+        libxinerama-dev \
+        libfreetype6-dev \
+        libfontconfig1-dev
+    
+    log_success "Build dependencies installed"
+}
+
+# Install build dependencies on NixOS
+install_build_deps_nixos() {
+    log_info "Installing build dependencies on NixOS..."
+    
+    log_warning "NixOS installation requires system configuration changes."
+    log_info "Please add the following to your NixOS configuration:"
+    
+    cat << 'EOF'
+# /etc/nixos/configuration.nix or equivalent
+{
+  services.xserver.windowManager.dwm.enable = true;
+
+  environment.systemPackages = with pkgs; [
+    dwm
+    dmenu
+    st
+    alacritty
+    rofi
+    feh
+    picom
+    scrot
+    networkmanagerapplet
+    blueman
+    pavucontrol
+    dunst
+  ];
+}
+EOF
+    
+    log_info "Then rebuild your system with: sudo nixos-rebuild switch"
+}
+
+# Install build dependencies based on detected distribution
+install_build_deps() {
+    case "$DISTRO" in
+        arch)
+            install_build_deps_arch
+            ;;
+        fedora)
+            install_build_deps_fedora
+            ;;
+        debian)
+            install_build_deps_debian
+            ;;
+        nixos)
+            install_build_deps_nixos
+            return 1  # Skip building on NixOS
+            ;;
+        *)
+            log_error "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+    esac
+}
+
+# Clone and build DWM
+build_dwm() {
+    log_info "Building DWM from source..."
+    
+    mkdir -p "$BUILD_DIR"
+    
+    if [[ -d "$DWM_DIR" ]]; then
+        log_info "DWM source already exists, updating..."
+        cd "$DWM_DIR"
+        git pull
+    else
+        log_info "Cloning DWM source..."
+        cd "$BUILD_DIR"
+        git clone https://git.suckless.org/dwm
+        cd "$DWM_DIR"
+    fi
+    
+    # Apply some basic patches and configuration
+    create_dwm_config
+    
+    # Build and install
+    make clean
+    make
+    sudo make install
+    
+    log_success "DWM built and installed"
+}
+
+# Create DWM configuration
+create_dwm_config() {
+    log_info "Creating DWM configuration..."
+    
+    # Backup original config if it exists
+    [[ -f config.h ]] && cp config.h config.h.backup
+    
+    # Create our customized config.h
+    cat > config.h << 'EOF'
+/* See LICENSE file for copyright and license details. */
+
+/* X11 headers for function keys */
+#include <X11/XF86keysym.h>
+
+/* appearance */
+static const unsigned int borderpx  = 2;        /* border pixel of windows */
+static const unsigned int snap      = 32;       /* snap pixel */
+static const int showbar            = 1;        /* 0 means no bar */
+static const int topbar             = 1;        /* 0 means bottom bar */
+static const char *fonts[]          = { "JetBrains Mono Nerd Font:size=10" };
+static const char dmenufont[]       = "JetBrains Mono Nerd Font:size=10";
+
+/* Catppuccin Macchiato colors */
+static const char col_bg[]          = "#24273a";
+static const char col_fg[]          = "#cad3f5";
+static const char col_blue[]        = "#8aadf4";
+static const char col_surface0[]    = "#363a4f";
+static const char col_overlay0[]    = "#6e738d";
+
+static const char *colors[][3]      = {
+	/*               fg         bg         border   */
+	[SchemeNorm] = { col_fg,    col_bg,    col_surface0 },
+	[SchemeSel]  = { col_fg,    col_blue,  col_blue  },
+};
+
+/* tagging */
+static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
+static const Rule rules[] = {
+	/* xprop(1):
+	 *	WM_CLASS(STRING) = instance, class
+	 *	WM_NAME(STRING) = title
+	 */
+	/* class      instance    title       tags mask     isfloating   monitor */
+	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
+	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
+};
+
+/* layout(s) */
+static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
+static const int nmaster     = 1;    /* number of clients in master area */
+static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
+static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
+
+static const Layout layouts[] = {
+	/* symbol     arrange function */
+	{ "[]=",      tile },    /* first entry is default */
+	{ "><>",      NULL },    /* no layout function means floating behavior */
+	{ "[M]",      monocle },
+};
+
+/* key definitions - Standardized with Hyprland */
+#define MODKEY Mod4Mask  /* Super/Windows key to match Hyprland */
+#define TAGKEYS(KEY,TAG) \
+	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
+	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
+	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
+	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
+
+/* helper for spawning shell commands in the pre dwm-5.0 fashion */
+#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
+
+/* commands */
+static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
+static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_bg, "-nf", col_fg, "-sb", col_blue, "-sf", col_bg, NULL };
+static const char *termcmd[]  = { "alacritty", NULL };
+static const char *roficmd[]  = { "rofi", "-show", "drun", NULL };
+static const char *filecmd[]  = { "thunar", NULL };
+
+/* volume and media control */
+static const char *vol_up[]   = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%", NULL };
+static const char *vol_down[] = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%", NULL };
+static const char *vol_mute[] = { "pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle", NULL };
+static const char *mic_mute[] = { "pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle", NULL };
+static const char *bri_up[]   = { "brightnessctl", "set", "+5%", NULL };
+static const char *bri_down[] = { "brightnessctl", "set", "5%-", NULL };
+static const char *play_pause[] = { "playerctl", "play-pause", NULL };
+static const char *next_track[] = { "playerctl", "next", NULL };
+static const char *prev_track[] = { "playerctl", "previous", NULL };
+
+/* application commands - use SHCMD for complex commands */
+#define WALLPAPER_CMD "feh --bg-scale --randomize ~/.config/wallpapers/* 2>/dev/null || feh --bg-scale ~/.config/wallpapers/default.jpg"
+#define KEYBIND_REF_CMD "/usr/bin/python3 ~/dotfiles/scripts/keybind-reference.py"
+
+static Key keys[] = {
+	/* modifier                     key        function        argument */
+	/* === CORE APPLICATION BINDINGS (match Hyprland) === */
+	{ MODKEY,                       XK_Return, spawn,          {.v = termcmd } },
+	{ MODKEY,                       XK_q,      killclient,     {0} },
+	{ MODKEY,                       XK_m,      quit,           {0} },
+	{ MODKEY,                       XK_e,      spawn,          {.v = filecmd } },
+	{ MODKEY,                       XK_space,  spawn,          {.v = roficmd } },
+	
+	/* === WINDOW MANAGEMENT === */
+	{ MODKEY,                       XK_t,      togglefloating, {0} },
+	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[2]} }, /* monocle (fullscreen-like) */
+	
+	/* === FOCUS MOVEMENT (vim keys + arrow keys) === */
+	{ MODKEY,                       XK_Left,   focusstack,     {.i = -1 } },
+	{ MODKEY,                       XK_Right,  focusstack,     {.i = +1 } },
+	{ MODKEY,                       XK_Up,     focusstack,     {.i = -1 } },
+	{ MODKEY,                       XK_Down,   focusstack,     {.i = +1 } },
+	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
+	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
+	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
+	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
+	
+	/* === LAYOUT MANAGEMENT === */
+	{ MODKEY,                       XK_Tab,    view,           {0} },
+	{ MODKEY|ShiftMask,             XK_Return, zoom,           {0} },
+	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
+	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
+	{ MODKEY,                       XK_r,      setlayout,      {.v = &layouts[0]} }, /* tiled */
+	{ MODKEY|ShiftMask,             XK_f,      setlayout,      {.v = &layouts[1]} }, /* floating */
+	{ MODKEY|ShiftMask,             XK_m,      setlayout,      {.v = &layouts[2]} }, /* monocle */
+	{ MODKEY|ControlMask,           XK_space,  setlayout,      {0} },
+	
+	/* === ADDITIONAL FEATURES === */
+	{ MODKEY,                       XK_b,      togglebar,      {0} },
+	{ MODKEY,                       XK_w,      spawn,          SHCMD(WALLPAPER_CMD) },
+	{ MODKEY,                       XK_slash,  spawn,          SHCMD(KEYBIND_REF_CMD) },
+	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
+	
+	/* === MONITOR MANAGEMENT === */
+	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
+	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
+	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
+	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+	
+	/* === ALL WORKSPACES === */
+	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+	
+	/* === MULTIMEDIA KEYS === */
+	{ 0,                            XF86XK_AudioRaiseVolume, spawn, {.v = vol_up } },
+	{ 0,                            XF86XK_AudioLowerVolume, spawn, {.v = vol_down } },
+	{ 0,                            XF86XK_AudioMute, spawn, {.v = vol_mute } },
+	{ 0,                            XF86XK_AudioMicMute, spawn, {.v = mic_mute } },
+	{ 0,                            XF86XK_MonBrightnessUp, spawn, {.v = bri_up } },
+	{ 0,                            XF86XK_MonBrightnessDown, spawn, {.v = bri_down } },
+	{ 0,                            XF86XK_AudioPlay, spawn, {.v = play_pause } },
+	{ 0,                            XF86XK_AudioPause, spawn, {.v = play_pause } },
+	{ 0,                            XF86XK_AudioNext, spawn, {.v = next_track } },
+	{ 0,                            XF86XK_AudioPrev, spawn, {.v = prev_track } },
+	
+	/* === WORKSPACE SWITCHING (1-9) === */
+	TAGKEYS(                        XK_1,                      0)
+	TAGKEYS(                        XK_2,                      1)
+	TAGKEYS(                        XK_3,                      2)
+	TAGKEYS(                        XK_4,                      3)
+	TAGKEYS(                        XK_5,                      4)
+	TAGKEYS(                        XK_6,                      5)
+	TAGKEYS(                        XK_7,                      6)
+	TAGKEYS(                        XK_8,                      7)
+	TAGKEYS(                        XK_9,                      8)
+};
+
+/* button definitions */
+/* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
+static Button buttons[] = {
+	/* click                event mask      button          function        argument */
+	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
+	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
+	{ ClkWinTitle,          0,              Button2,        zoom,           {0} },
+	{ ClkStatusText,        0,              Button2,        spawn,          {.v = termcmd } },
+	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
+	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
+	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
+	{ ClkTagBar,            0,              Button1,        view,           {0} },
+	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
+	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
+	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
+};
+EOF
+
+    log_success "DWM configuration created"
+}
+
+# Build dmenu (application launcher)
+build_dmenu() {
+    log_info "Building dmenu from source..."
+    
+    if [[ -d "$DMENU_DIR" ]]; then
+        log_info "dmenu source already exists, updating..."
+        cd "$DMENU_DIR"
+        git pull
+    else
+        log_info "Cloning dmenu source..."
+        cd "$BUILD_DIR"
+        git clone https://git.suckless.org/dmenu
+        cd "$DMENU_DIR"
+    fi
+    
+    # Create dmenu config
+    create_dmenu_config
+    
+    # Build and install
+    make clean
+    make
+    sudo make install
+    
+    log_success "dmenu built and installed"
+}
+
+# Create dmenu configuration
+create_dmenu_config() {
+    log_info "Creating dmenu configuration..."
+    
+    # Backup original config if it exists
+    [[ -f config.h ]] && cp config.h config.h.backup
+    
+    # Create our customized config.h
+    cat > config.h << 'EOF'
+/* See LICENSE file for copyright and license details. */
+/* Default settings; can be overriden by command line. */
+
+static int topbar = 1;                      /* -b  option; if 0, dmenu appears at bottom     */
+/* -fn option overrides fonts[0]; default X11 font or font set */
+static const char *fonts[] = {
+	"JetBrains Mono Nerd Font:size=10"
+};
+static const char *prompt      = NULL;      /* -p  option; prompt to the left of input field */
+
+/* Catppuccin Macchiato colors */
+static const char *colors[SchemeLast][2] = {
+	/*     fg         bg       */
+	[SchemeNorm] = { "#cad3f5", "#24273a" },
+	[SchemeSel] = { "#24273a", "#8aadf4" },
+	[SchemeOut] = { "#cad3f5", "#a6da95" },
+};
+/* -l option; if nonzero, dmenu uses vertical list with given number of lines */
+static unsigned int lines      = 0;
+
+/*
+ * Characters not considered part of a word while deleting words
+ * for example: " /?\"&[]"
+ */
+static const char worddelimiters[] = " ";
+EOF
+
+    log_success "dmenu configuration created"
+}
+
+# Build st (simple terminal) - optional
+build_st() {
+    log_info "Building st (simple terminal) from source..."
+    
+    if [[ -d "$ST_DIR" ]]; then
+        log_info "st source already exists, updating..."
+        cd "$ST_DIR"
+        git pull
+    else
+        log_info "Cloning st source..."
+        cd "$BUILD_DIR"
+        git clone https://git.suckless.org/st
+        cd "$ST_DIR"
+    fi
+    
+    # Create st config
+    create_st_config
+    
+    # Build and install
+    make clean
+    make
+    sudo make install
+    
+    log_success "st built and installed"
+}
+
+# Create st configuration
+create_st_config() {
+    log_info "Creating st configuration..."
+    
+    # Backup original config if it exists
+    [[ -f config.h ]] && cp config.h config.h.backup
+    
+    # Create basic customized config.h with Catppuccin colors
+    cat > config.h << 'EOF'
+/* See LICENSE file for copyright and license details. */
+
+/*
+ * appearance
+ *
+ * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
+ */
+static char *font = "JetBrains Mono Nerd Font:pixelsize=14:antialias=true:autohint=true";
+static int borderpx = 2;
+
+/*
+ * What program is execed by st depends of these precedence rules:
+ * 1: program passed with -e
+ * 2: utmp option
+ * 3: SHELL environment variable
+ * 4: value of shell in /etc/passwd
+ * 5: value of shell in config.h
+ */
+static char *shell = "/bin/sh";
+char *utmp = NULL;
+/* scroll program: to enable use a string like "scroll" */
+char *scroll = NULL;
+char *stty_args = "stty raw pass8 nl -echo -iexten -cstopb 38400";
+
+/* identification sequence returned in DA and DECID */
+char *vtiden = "\033[?6c";
+
+/* Kerning / character bounding-box multipliers */
+static float cwscale = 1.0;
+static float chscale = 1.0;
+
+/*
+ * word delimiter string
+ *
+ * More advanced example: L" `'\"()[]{}"
+ */
+wchar_t *worddelimiters = L" ";
+
+/* selection timeouts (in milliseconds) */
+static unsigned int doubleclicktimeout = 300;
+static unsigned int tripleclicktimeout = 600;
+
+/* alt screens */
+int allowaltscreen = 1;
+
+/* allow certain non-printable characters to be displayed */
+static const int allowwindowops = 0;
+
+/*
+ * draw latency range in ms - from new content/keypress/etc until drawing.
+ * within this range, st draws when content stops arriving (idle). mostly it's
+ * near minlatency, but it waits longer for slow updates to avoid partial draw.
+ * low minlatency will tear/flicker more, as terminal content comes in slowly.
+ * high maxlatency delays input feedback and increases memory consumption.
+ */
+static double minlatency = 2;
+static double maxlatency = 33;
+
+/*
+ * blinking timeout (set to 0 to disable blinking) for the terminal blinking
+ * attribute.
+ */
+static unsigned int blinktimeout = 800;
+
+/*
+ * thickness of underline and bar cursors
+ */
+static unsigned int cursorthickness = 2;
+
+/*
+ * bell volume. It must be a value between -100 and 100. Use 0 for disabling
+ * it
+ */
+static int bellvolume = 0;
+
+/* default TERM value */
+char *termname = "st-256color";
+
+/*
+ * spaces per tab
+ *
+ * When you are changing this value, don't forget to adapt the »it« value in
+ * the st.info and appropriately install the st.info in the environment where
+ * you use this st version.
+ *
+ *	it#$tabspaces,
+ *
+ * Secondly make sure your kernel is not expanding tabs. When running `stty -a`
+ * `tab0` should appear. You can tell the terminal to not expand tabs by
+ * running following command:
+ *
+ *	stty tabs
+ */
+unsigned int tabspaces = 8;
+
+/* Catppuccin Macchiato Terminal Colors */
+static const char *colorname[] = {
+	/* 8 normal colors */
+	"#494d64", /* black   */
+	"#ed8796", /* red     */
+	"#a6da95", /* green   */
+	"#eed49f", /* yellow  */
+	"#8aadf4", /* blue    */
+	"#f5bde6", /* magenta */
+	"#8bd5ca", /* cyan    */
+	"#b8c0e0", /* white   */
+
+	/* 8 bright colors */
+	"#5b6078", /* black   */
+	"#ed8796", /* red     */
+	"#a6da95", /* green   */
+	"#eed49f", /* yellow  */
+	"#8aadf4", /* blue    */
+	"#f5bde6", /* magenta */
+	"#8bd5ca", /* cyan    */
+	"#a5adcb", /* white   */
+
+	[255] = 0,
+
+	/* more colors can be added after 255 to use with DefaultXX */
+	"#cad3f5", /* default foreground colour */
+	"#24273a", /* default background colour */
+};
+
+/*
+ * Default colors (colorname index)
+ * foreground, background, cursor, reverse cursor
+ */
+unsigned int defaultfg = 256;
+unsigned int defaultbg = 257;
+unsigned int defaultcs = 256;
+static unsigned int defaultrcs = 257;
+
+/*
+ * Default shape of cursor
+ * 2: Block ("█")
+ * 4: Underline ("_")
+ * 6: Bar ("|")
+ * 7: Snowman ("☃")
+ */
+static unsigned int cursorshape = 2;
+
+/*
+ * Default columns and rows numbers
+ */
+
+static unsigned int cols = 80;
+static unsigned int rows = 24;
+
+/*
+ * Default colour and shape of the mouse cursor
+ */
+static unsigned int mouseshape = XC_xterm;
+static unsigned int mousefg = 7;
+static unsigned int mousebg = 0;
+
+/*
+ * Color used to display font attributes when fontconfig selected a font which
+ * doesn't match the ones requested.
+ */
+static unsigned int defaultattr = 11;
+
+/*
+ * Force mouse select/shortcuts while mask is active (when MODE_MOUSE is set).
+ * Note that if you want to use ShiftMask with selmasks, set this to an other
+ * modifier, set to 0 to not use it.
+ */
+static uint forcemousemod = ShiftMask;
+
+/*
+ * Internal mouse shortcuts.
+ * Beware that overloading Button1 will disable the selection.
+ */
+static MouseShortcut mshortcuts[] = {
+	/* mask                 button   function        argument       release */
+	{ XK_ANY_MOD,           Button2, selpaste,       {.i = 0},      1 },
+	{ ShiftMask,            Button4, ttysend,        {.s = "\033[5;2~"} },
+	{ XK_ANY_MOD,           Button4, ttysend,        {.s = "\031"} },
+	{ ShiftMask,            Button5, ttysend,        {.s = "\033[6;2~"} },
+	{ XK_ANY_MOD,           Button5, ttysend,        {.s = "\005"} },
+};
+
+/* Internal keyboard shortcuts. */
+#define MODKEY Mod1Mask
+#define TERMMOD (ControlMask|ShiftMask)
+
+static Shortcut shortcuts[] = {
+	/* mask                 keysym          function        argument */
+	{ XK_ANY_MOD,           XK_Break,       sendbreak,      {.i =  0} },
+	{ ControlMask,          XK_Print,       toggleprinter,  {.i =  0} },
+	{ ShiftMask,            XK_Print,       printscreen,    {.i =  0} },
+	{ XK_ANY_MOD,           XK_Print,       printsel,       {.i =  0} },
+	{ TERMMOD,              XK_Prior,       zoom,           {.f = +1} },
+	{ TERMMOD,              XK_Next,        zoom,           {.f = -1} },
+	{ TERMMOD,              XK_Home,        zoomreset,      {.f =  0} },
+	{ TERMMOD,              XK_C,           clipcopy,       {.i =  0} },
+	{ TERMMOD,              XK_V,           clippaste,      {.i =  0} },
+	{ TERMMOD,              XK_Y,           selpaste,       {.i =  0} },
+	{ ShiftMask,            XK_Insert,      selpaste,       {.i =  0} },
+	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i =  0} },
+};
+
+/*
+ * Special keys (change & recompile st.info accordingly)
+ *
+ * Mask value:
+ * * Use XK_ANY_MOD to match the key no matter modifiers state
+ * * Use XK_NO_MOD to match the key alone (no modifiers)
+ * appkey value:
+ * * 0: no value
+ * * > 0: keypad application mode enabled
+ * *   = 2: term.numlock = 1
+ * * < 0: keypad application mode disabled
+ * appcursor value:
+ * * 0: no value
+ * * > 0: cursor application mode enabled
+ * * < 0: cursor application mode disabled
+ *
+ * Be careful with the order of the definitions because st searches in
+ * this table sequentially, so any XK_ANY_MOD must be in the last
+ * position for a key.
+ */
+
+/*
+ * If you want keys other than the X11 function keys (0xFD00 - 0xFFFF)
+ * to be mapped below, add them to this array.
+ */
+static KeySym mappedkeys[] = { -1 };
+
+/*
+ * State bits to ignore when matching key or button events.  By default,
+ * numlock (Mod2Mask) and keyboard layout (XK_SWITCH_MOD) are ignored.
+ */
+static uint ignoremod = Mod2Mask|XK_SWITCH_MOD;
+
+/*
+ * This is the huge key array which defines all compatibility to the Linux
+ * world. Please decide about changes wisely.
+ */
+static Key key[] = {
+	/* keysym           mask            string      appkey appcursor */
+	{ XK_KP_Home,       ShiftMask,      "\033[2J",       0,   -1},
+	{ XK_KP_Home,       ShiftMask,      "\033[1;2H",     0,   +1},
+	{ XK_KP_Home,       XK_ANY_MOD,     "\033[H",        0,   -1},
+	{ XK_KP_Home,       XK_ANY_MOD,     "\033[1~",       0,   +1},
+	{ XK_KP_Up,         XK_ANY_MOD,     "\033Ox",       +1,    0},
+	{ XK_KP_Up,         XK_ANY_MOD,     "\033[A",        0,   -1},
+	{ XK_KP_Up,         XK_ANY_MOD,     "\033OA",        0,   +1},
+	{ XK_KP_Down,       XK_ANY_MOD,     "\033Or",       +1,    0},
+	{ XK_KP_Down,       XK_ANY_MOD,     "\033[B",        0,   -1},
+	{ XK_KP_Down,       XK_ANY_MOD,     "\033OB",        0,   +1},
+	{ XK_KP_Left,       XK_ANY_MOD,     "\033Ot",       +1,    0},
+	{ XK_KP_Left,       XK_ANY_MOD,     "\033[D",        0,   -1},
+	{ XK_KP_Left,       XK_ANY_MOD,     "\033OD",        0,   +1},
+	{ XK_KP_Right,      XK_ANY_MOD,     "\033Ov",       +1,    0},
+	{ XK_KP_Right,      XK_ANY_MOD,     "\033[C",        0,   -1},
+	{ XK_KP_Right,      XK_ANY_MOD,     "\033OC",        0,   +1},
+	{ XK_KP_Prior,      ShiftMask,      "\033[5;2~",     0,    0},
+	{ XK_KP_Prior,      XK_ANY_MOD,     "\033[5~",       0,    0},
+	{ XK_KP_Begin,      XK_ANY_MOD,     "\033[E",        0,    0},
+	{ XK_KP_End,        ControlMask,    "\033[J",       -1,    0},
+	{ XK_KP_End,        ControlMask,    "\033[1;5F",    +1,    0},
+	{ XK_KP_End,        ShiftMask,      "\033[K",       -1,    0},
+	{ XK_KP_End,        ShiftMask,      "\033[1;2F",    +1,    0},
+	{ XK_KP_End,        XK_ANY_MOD,     "\033[4~",       0,    0},
+	{ XK_KP_Next,       ShiftMask,      "\033[6;2~",     0,    0},
+	{ XK_KP_Next,       XK_ANY_MOD,     "\033[6~",       0,    0},
+	{ XK_KP_Insert,     ShiftMask,      "\033[2;2~",    +1,    0},
+	{ XK_KP_Insert,     ShiftMask,      "\033[2;2~",    -1,    0},
+	{ XK_KP_Insert,     ControlMask,    "\033[2;5~",    +1,    0},
+	{ XK_KP_Insert,     ControlMask,    "\033[2;5~",    -1,    0},
+	{ XK_KP_Insert,     XK_ANY_MOD,     "\033[4h",      -1,    0},
+	{ XK_KP_Insert,     XK_ANY_MOD,     "\033[2~",      +1,    0},
+	{ XK_KP_Delete,     ControlMask,    "\033[M",       -1,    0},
+	{ XK_KP_Delete,     ControlMask,    "\033[3;5~",    +1,    0},
+	{ XK_KP_Delete,     ShiftMask,      "\033[2K",      -1,    0},
+	{ XK_KP_Delete,     ShiftMask,      "\033[3;2~",    +1,    0},
+	{ XK_KP_Delete,     XK_ANY_MOD,     "\033[P",       -1,    0},
+	{ XK_KP_Delete,     XK_ANY_MOD,     "\033[3~",      +1,    0},
+	{ XK_KP_Multiply,   XK_ANY_MOD,     "\033Oj",       +2,    0},
+	{ XK_KP_Add,        XK_ANY_MOD,     "\033Ok",       +2,    0},
+	{ XK_KP_Enter,      XK_ANY_MOD,     "\033OM",       +2,    0},
+	{ XK_KP_Enter,      XK_ANY_MOD,     "\r",           -1,    0},
+	{ XK_KP_Subtract,   XK_ANY_MOD,     "\033Om",       +2,    0},
+	{ XK_KP_Decimal,    XK_ANY_MOD,     "\033On",       +2,    0},
+	{ XK_KP_Divide,     XK_ANY_MOD,     "\033Oo",       +2,    0},
+	{ XK_KP_0,          XK_ANY_MOD,     "\033Op",       +2,    0},
+	{ XK_KP_1,          XK_ANY_MOD,     "\033Oq",       +2,    0},
+	{ XK_KP_2,          XK_ANY_MOD,     "\033Or",       +2,    0},
+	{ XK_KP_3,          XK_ANY_MOD,     "\033Os",       +2,    0},
+	{ XK_KP_4,          XK_ANY_MOD,     "\033Ot",       +2,    0},
+	{ XK_KP_5,          XK_ANY_MOD,     "\033Ou",       +2,    0},
+	{ XK_KP_6,          XK_ANY_MOD,     "\033Ov",       +2,    0},
+	{ XK_KP_7,          XK_ANY_MOD,     "\033Ow",       +2,    0},
+	{ XK_KP_8,          XK_ANY_MOD,     "\033Ox",       +2,    0},
+	{ XK_KP_9,          XK_ANY_MOD,     "\033Oy",       +2,    0},
+	{ XK_Up,            ShiftMask,      "\033[1;2A",     0,    0},
+	{ XK_Up,            Mod1Mask,       "\033[1;3A",     0,    0},
+	{ XK_Up,         ShiftMask|Mod1Mask,"\033[1;4A",     0,    0},
+	{ XK_Up,            ControlMask,    "\033[1;5A",     0,    0},
+	{ XK_Up,      ShiftMask|ControlMask,"\033[1;6A",     0,    0},
+	{ XK_Up,       ControlMask|Mod1Mask,"\033[1;7A",     0,    0},
+	{ XK_Up,ShiftMask|ControlMask|Mod1Mask,"\033[1;8A",  0,    0},
+	{ XK_Up,            XK_ANY_MOD,     "\033[A",        0,   -1},
+	{ XK_Up,            XK_ANY_MOD,     "\033OA",        0,   +1},
+	{ XK_Down,          ShiftMask,      "\033[1;2B",     0,    0},
+	{ XK_Down,          Mod1Mask,       "\033[1;3B",     0,    0},
+	{ XK_Down,       ShiftMask|Mod1Mask,"\033[1;4B",     0,    0},
+	{ XK_Down,          ControlMask,    "\033[1;5B",     0,    0},
+	{ XK_Down,    ShiftMask|ControlMask,"\033[1;6B",     0,    0},
+	{ XK_Down,     ControlMask|Mod1Mask,"\033[1;7B",     0,    0},
+	{ XK_Down,ShiftMask|ControlMask|Mod1Mask,"\033[1;8B",0,    0},
+	{ XK_Down,          XK_ANY_MOD,     "\033[B",        0,   -1},
+	{ XK_Down,          XK_ANY_MOD,     "\033OB",        0,   +1},
+	{ XK_Left,          ShiftMask,      "\033[1;2D",     0,    0},
+	{ XK_Left,          Mod1Mask,       "\033[1;3D",     0,    0},
+	{ XK_Left,       ShiftMask|Mod1Mask,"\033[1;4D",     0,    0},
+	{ XK_Left,          ControlMask,    "\033[1;5D",     0,    0},
+	{ XK_Left,    ShiftMask|ControlMask,"\033[1;6D",     0,    0},
+	{ XK_Left,     ControlMask|Mod1Mask,"\033[1;7D",     0,    0},
+	{ XK_Left,ShiftMask|ControlMask|Mod1Mask,"\033[1;8D",0,    0},
+	{ XK_Left,          XK_ANY_MOD,     "\033[D",        0,   -1},
+	{ XK_Left,          XK_ANY_MOD,     "\033OD",        0,   +1},
+	{ XK_Right,         ShiftMask,      "\033[1;2C",     0,    0},
+	{ XK_Right,         Mod1Mask,       "\033[1;3C",     0,    0},
+	{ XK_Right,      ShiftMask|Mod1Mask,"\033[1;4C",     0,    0},
+	{ XK_Right,         ControlMask,    "\033[1;5C",     0,    0},
+	{ XK_Right,   ShiftMask|ControlMask,"\033[1;6C",     0,    0},
+	{ XK_Right,    ControlMask|Mod1Mask,"\033[1;7C",     0,    0},
+	{ XK_Right,ShiftMask|ControlMask|Mod1Mask,"\033[1;8C",0,   0},
+	{ XK_Right,         XK_ANY_MOD,     "\033[C",        0,   -1},
+	{ XK_Right,         XK_ANY_MOD,     "\033OC",        0,   +1},
+	{ XK_ISO_Left_Tab,  ShiftMask,      "\033[Z",        0,    0},
+	{ XK_Return,        Mod1Mask,       "\033\r",        0,    0},
+	{ XK_Return,        XK_ANY_MOD,     "\r",            0,    0},
+	{ XK_Insert,        ShiftMask,      "\033[4l",      -1,    0},
+	{ XK_Insert,        ShiftMask,      "\033[2;2~",    +1,    0},
+	{ XK_Insert,        ControlMask,    "\033[2;5~",    +1,    0},
+	{ XK_Insert,        XK_ANY_MOD,     "\033[4h",      -1,    0},
+	{ XK_Insert,        XK_ANY_MOD,     "\033[2~",      +1,    0},
+	{ XK_Delete,        ControlMask,    "\033[M",       -1,    0},
+	{ XK_Delete,        ControlMask,    "\033[3;5~",    +1,    0},
+	{ XK_Delete,        ShiftMask,      "\033[2K",      -1,    0},
+	{ XK_Delete,        ShiftMask,      "\033[3;2~",    +1,    0},
+	{ XK_Delete,        XK_ANY_MOD,     "\033[P",       -1,    0},
+	{ XK_Delete,        XK_ANY_MOD,     "\033[3~",      +1,    0},
+	{ XK_BackSpace,     XK_NO_MOD,      "\177",          0,    0},
+	{ XK_BackSpace,     Mod1Mask,       "\033\177",      0,    0},
+	{ XK_Home,          ShiftMask,      "\033[2J",       0,   -1},
+	{ XK_Home,          ShiftMask,      "\033[1;2H",     0,   +1},
+	{ XK_Home,          XK_ANY_MOD,     "\033[H",        0,   -1},
+	{ XK_Home,          XK_ANY_MOD,     "\033[1~",       0,   +1},
+	{ XK_End,           ControlMask,    "\033[J",       -1,    0},
+	{ XK_End,           ControlMask,    "\033[1;5F",    +1,    0},
+	{ XK_End,           ShiftMask,      "\033[K",       -1,    0},
+	{ XK_End,           ShiftMask,      "\033[1;2F",    +1,    0},
+	{ XK_End,           XK_ANY_MOD,     "\033[4~",       0,    0},
+	{ XK_Prior,         ControlMask,    "\033[5;5~",     0,    0},
+	{ XK_Prior,         ShiftMask,      "\033[5;2~",     0,    0},
+	{ XK_Prior,         XK_ANY_MOD,     "\033[5~",       0,    0},
+	{ XK_Next,          ControlMask,    "\033[6;5~",     0,    0},
+	{ XK_Next,          ShiftMask,      "\033[6;2~",     0,    0},
+	{ XK_Next,          XK_ANY_MOD,     "\033[6~",       0,    0},
+	{ XK_F1,            XK_NO_MOD,      "\033OP" ,       0,    0},
+	{ XK_F1, /* F13 */  ShiftMask,      "\033[1;2P",     0,    0},
+	{ XK_F1, /* F25 */  ControlMask,    "\033[1;5P",     0,    0},
+	{ XK_F1, /* F37 */  Mod4Mask,       "\033[1;6P",     0,    0},
+	{ XK_F1, /* F49 */  Mod1Mask,       "\033[1;3P",     0,    0},
+	{ XK_F1, /* F61 */  Mod3Mask,       "\033[1;4P",     0,    0},
+	{ XK_F2,            XK_NO_MOD,      "\033OQ" ,       0,    0},
+	{ XK_F2, /* F14 */  ShiftMask,      "\033[1;2Q",     0,    0},
+	{ XK_F2, /* F26 */  ControlMask,    "\033[1;5Q",     0,    0},
+	{ XK_F2, /* F38 */  Mod4Mask,       "\033[1;6Q",     0,    0},
+	{ XK_F2, /* F50 */  Mod1Mask,       "\033[1;3Q",     0,    0},
+	{ XK_F2, /* F62 */  Mod3Mask,       "\033[1;4Q",     0,    0},
+	{ XK_F3,            XK_NO_MOD,      "\033OR" ,       0,    0},
+	{ XK_F3, /* F15 */  ShiftMask,      "\033[1;2R",     0,    0},
+	{ XK_F3, /* F27 */  ControlMask,    "\033[1;5R",     0,    0},
+	{ XK_F3, /* F39 */  Mod4Mask,       "\033[1;6R",     0,    0},
+	{ XK_F3, /* F51 */  Mod1Mask,       "\033[1;3R",     0,    0},
+	{ XK_F3, /* F63 */  Mod3Mask,       "\033[1;4R",     0,    0},
+	{ XK_F4,            XK_NO_MOD,      "\033OS" ,       0,    0},
+	{ XK_F4, /* F16 */  ShiftMask,      "\033[1;2S",     0,    0},
+	{ XK_F4, /* F28 */  ControlMask,    "\033[1;5S",     0,    0},
+	{ XK_F4, /* F40 */  Mod4Mask,       "\033[1;6S",     0,    0},
+	{ XK_F4, /* F52 */  Mod1Mask,       "\033[1;3S",     0,    0},
+	{ XK_F5,            XK_NO_MOD,      "\033[15~",      0,    0},
+	{ XK_F5, /* F17 */  ShiftMask,      "\033[15;2~",    0,    0},
+	{ XK_F5, /* F29 */  ControlMask,    "\033[15;5~",    0,    0},
+	{ XK_F5, /* F41 */  Mod4Mask,       "\033[15;6~",    0,    0},
+	{ XK_F5, /* F53 */  Mod1Mask,       "\033[15;3~",    0,    0},
+	{ XK_F6,            XK_NO_MOD,      "\033[17~",      0,    0},
+	{ XK_F6, /* F18 */  ShiftMask,      "\033[17;2~",    0,    0},
+	{ XK_F6, /* F30 */  ControlMask,    "\033[17;5~",    0,    0},
+	{ XK_F6, /* F42 */  Mod4Mask,       "\033[17;6~",    0,    0},
+	{ XK_F6, /* F54 */  Mod1Mask,       "\033[17;3~",    0,    0},
+	{ XK_F7,            XK_NO_MOD,      "\033[18~",      0,    0},
+	{ XK_F7, /* F19 */  ShiftMask,      "\033[18;2~",    0,    0},
+	{ XK_F7, /* F31 */  ControlMask,    "\033[18;5~",    0,    0},
+	{ XK_F7, /* F43 */  Mod4Mask,       "\033[18;6~",    0,    0},
+	{ XK_F7, /* F55 */  Mod1Mask,       "\033[18;3~",    0,    0},
+	{ XK_F8,            XK_NO_MOD,      "\033[19~",      0,    0},
+	{ XK_F8, /* F20 */  ShiftMask,      "\033[19;2~",    0,    0},
+	{ XK_F8, /* F32 */  ControlMask,    "\033[19;5~",    0,    0},
+	{ XK_F8, /* F44 */  Mod4Mask,       "\033[19;6~",    0,    0},
+	{ XK_F8, /* F56 */  Mod1Mask,       "\033[19;3~",    0,    0},
+	{ XK_F9,            XK_NO_MOD,      "\033[20~",      0,    0},
+	{ XK_F9, /* F21 */  ShiftMask,      "\033[20;2~",    0,    0},
+	{ XK_F9, /* F33 */  ControlMask,    "\033[20;5~",    0,    0},
+	{ XK_F9, /* F45 */  Mod4Mask,       "\033[20;6~",    0,    0},
+	{ XK_F9, /* F57 */  Mod1Mask,       "\033[20;3~",    0,    0},
+	{ XK_F10,           XK_NO_MOD,      "\033[21~",      0,    0},
+	{ XK_F10, /* F22 */ ShiftMask,      "\033[21;2~",    0,    0},
+	{ XK_F10, /* F34 */ ControlMask,    "\033[21;5~",    0,    0},
+	{ XK_F10, /* F46 */ Mod4Mask,       "\033[21;6~",    0,    0},
+	{ XK_F10, /* F58 */ Mod1Mask,       "\033[21;3~",    0,    0},
+	{ XK_F11,           XK_NO_MOD,      "\033[23~",      0,    0},
+	{ XK_F11, /* F23 */ ShiftMask,      "\033[23;2~",    0,    0},
+	{ XK_F11, /* F35 */ ControlMask,    "\033[23;5~",    0,    0},
+	{ XK_F11, /* F47 */ Mod4Mask,       "\033[23;6~",    0,    0},
+	{ XK_F11, /* F59 */ Mod1Mask,       "\033[23;3~",    0,    0},
+	{ XK_F12,           XK_NO_MOD,      "\033[24~",      0,    0},
+	{ XK_F12, /* F24 */ ShiftMask,      "\033[24;2~",    0,    0},
+	{ XK_F12, /* F36 */ ControlMask,    "\033[24;5~",    0,    0},
+	{ XK_F12, /* F48 */ Mod4Mask,       "\033[24;6~",    0,    0},
+	{ XK_F12, /* F60 */ Mod1Mask,       "\033[24;3~",    0,    0},
+	{ XK_F13,           XK_NO_MOD,      "\033[1;2P",     0,    0},
+	{ XK_F14,           XK_NO_MOD,      "\033[1;2Q",     0,    0},
+	{ XK_F15,           XK_NO_MOD,      "\033[1;2R",     0,    0},
+	{ XK_F16,           XK_NO_MOD,      "\033[1;2S",     0,    0},
+	{ XK_F17,           XK_NO_MOD,      "\033[15;2~",    0,    0},
+	{ XK_F18,           XK_NO_MOD,      "\033[17;2~",    0,    0},
+	{ XK_F19,           XK_NO_MOD,      "\033[18;2~",    0,    0},
+	{ XK_F20,           XK_NO_MOD,      "\033[19;2~",    0,    0},
+	{ XK_F21,           XK_NO_MOD,      "\033[20;2~",    0,    0},
+	{ XK_F22,           XK_NO_MOD,      "\033[21;2~",    0,    0},
+	{ XK_F23,           XK_NO_MOD,      "\033[23;2~",    0,    0},
+	{ XK_F24,           XK_NO_MOD,      "\033[24;2~",    0,    0},
+	{ XK_F25,           XK_NO_MOD,      "\033[1;5P",     0,    0},
+	{ XK_F26,           XK_NO_MOD,      "\033[1;5Q",     0,    0},
+	{ XK_F27,           XK_NO_MOD,      "\033[1;5R",     0,    0},
+	{ XK_F28,           XK_NO_MOD,      "\033[1;5S",     0,    0},
+	{ XK_F29,           XK_NO_MOD,      "\033[15;5~",    0,    0},
+	{ XK_F30,           XK_NO_MOD,      "\033[17;5~",    0,    0},
+	{ XK_F31,           XK_NO_MOD,      "\033[18;5~",    0,    0},
+	{ XK_F32,           XK_NO_MOD,      "\033[19;5~",    0,    0},
+	{ XK_F33,           XK_NO_MOD,      "\033[20;5~",    0,    0},
+	{ XK_F34,           XK_NO_MOD,      "\033[21;5~",    0,    0},
+	{ XK_F35,           XK_NO_MOD,      "\033[23;5~",    0,    0},
+};
+
+/*
+ * Selection types' masks.
+ * Use the same masks as usual.
+ * Button1Mask is always unset, to make masks match between ButtonPress.
+ * ButtonRelease and MotionNotify.
+ * If no match is found, regular selection is used.
+ */
+static uint selmasks[] = {
+	[SEL_RECTANGULAR] = Mod1Mask,
+};
+
+/*
+ * Printable characters in ASCII, used to estimate the advance width
+ * of single wide characters.
+ */
+static char ascii_printable[] =
+	" !\"#$%&'()*+,-./0123456789:;<=>?"
+	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+	"`abcdefghijklmnopqrstuvwxyz{|}~";
+EOF
+
+    log_success "st configuration created"
+}
+
+# Install additional tools on Arch Linux
+install_additional_tools_arch() {
+    log_info "Installing additional X11 tools on Arch Linux..."
+    
+    # Arch check should have been done in system detection, but double-check for safety
+    if ! command -v pacman >/dev/null 2>&1; then
+        log_error "pacman not found - this function requires an Arch-based system"
+        exit 1
+    fi
+    
+    sudo pacman -S --needed --noconfirm \
+        alacritty \
+        rofi \
+        feh \
+        picom \
+        scrot \
+        network-manager-applet \
+        blueman \
+        pavucontrol \
+        dunst \
+        ttf-jetbrains-mono-nerd \
+        ttf-fira-code \
+        noto-fonts \
+        noto-fonts-emoji
+    
+    log_success "Additional tools installed"
+}
+
+# Install additional tools on Fedora
+install_additional_tools_fedora() {
+    log_info "Installing additional X11 tools on Fedora..."
+    
+    sudo dnf install -y \
+        alacritty \
+        rofi \
+        feh \
+        picom \
+        scrot \
+        NetworkManager-applet \
+        blueman \
+        pavucontrol \
+        dunst \
+        jetbrains-mono-fonts \
+        fira-code-fonts \
+        google-noto-fonts-common \
+        google-noto-emoji-fonts
+    
+    log_success "Additional tools installed"
+}
+
+# Install additional tools on Debian/Ubuntu
+install_additional_tools_debian() {
+    log_info "Installing additional X11 tools on Debian/Ubuntu..."
+    
+    sudo apt install -y \
+        alacritty \
+        rofi \
+        feh \
+        picom \
+        scrot \
+        network-manager-gnome \
+        blueman \
+        pavucontrol \
+        dunst \
+        fonts-jetbrains-mono \
+        fonts-firacode \
+        fonts-noto \
+        fonts-noto-color-emoji
+    
+    log_success "Additional tools installed"
+}
+
+# Install additional tools based on detected distribution
+install_additional_tools() {
+    case "$DISTRO" in
+        arch)
+            install_additional_tools_arch
+            ;;
+        fedora)
+            install_additional_tools_fedora
+            ;;
+        debian)
+            install_additional_tools_debian
+            ;;
+        nixos)
+            log_info "Additional tools are included in NixOS configuration above"
+            ;;
+        *)
+            log_error "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+    esac
+}
+
+# Create desktop entry
+create_desktop_entry() {
+    log_info "Creating DWM desktop entry..."
+    
+    sudo mkdir -p /usr/share/xsessions
+    
+    cat << 'EOF' | sudo tee /usr/share/xsessions/dwm.desktop > /dev/null
+[Desktop Entry]
+Encoding=UTF-8
+Name=DWM
+Comment=Dynamic window manager
+TryExec=/usr/local/bin/dwm
+Exec=/usr/local/bin/dwm
+Icon=dwm
+Type=XSession
+EOF
+    
+    log_success "DWM desktop entry created"
+}
+
+# Ask about optional components
+ask_build_options() {
+    echo
+    log_info "Optional components:"
+    
+    read -p "Build dmenu? (Y/n): " build_dmenu_choice
+    if [[ ! "$build_dmenu_choice" =~ ^[Nn]$ ]]; then
+        BUILD_DMENU=true
+    else
+        BUILD_DMENU=false
+    fi
+    
+    read -p "Build st (simple terminal)? (y/N): " build_st_choice
+    if [[ "$build_st_choice" =~ ^[Yy]$ ]]; then
+        BUILD_ST=true
+    else
+        BUILD_ST=false
+    fi
+}
+
+main() {
+    echo "Installing DWM (Dynamic Window Manager)..."
+    echo "DWM is a minimalist tiling window manager that requires compilation from source."
+    echo
+    
+    detect_system
+    
+    # Handle NixOS differently as it doesn't compile from source
+    if [[ "$DISTRO" == "nixos" ]]; then
+        install_build_deps  # This will show NixOS configuration instructions
+        return
+    fi
+    
+    ask_build_options
+    
+    if ! install_build_deps; then
+        return  # Exit if build deps installation failed (like in NixOS)
+    fi
+    
+    build_dwm
+    
+    if [[ "$BUILD_DMENU" == true ]]; then
+        build_dmenu
+    fi
+    
+    if [[ "$BUILD_ST" == true ]]; then
+        build_st
+    fi
+    
+    install_additional_tools
+    create_desktop_entry
+    
+    log_success "DWM installation completed!"
+    echo
+    log_info "DWM has been built and installed to /usr/local/bin/dwm"
+    log_info "You can start DWM with: startx dwm"
+    log_info "Or from your display manager by selecting DWM"
+    echo
+    log_info "Basic keybindings (Alt key is the modifier):"
+    echo "  Alt + Shift + Return : Open terminal"
+    echo "  Alt + p              : dmenu launcher"
+    if [[ "$BUILD_DMENU" == false ]]; then
+        echo "                       (install dmenu first: run script again)"
+    fi
+    echo "  Alt + r              : rofi launcher"
+    echo "  Alt + Shift + c      : Close window"
+    echo "  Alt + j/k            : Navigate windows"
+    echo "  Alt + h/l            : Resize master area"
+    echo "  Alt + 1-9            : Switch tags (workspaces)"
+    echo "  Alt + Shift + 1-9    : Move window to tag"
+    echo "  Alt + Shift + q      : Quit DWM"
+    echo
+    log_info "Source code locations:"
+    echo "  DWM:   $DWM_DIR"
+    if [[ "$BUILD_DMENU" == true ]]; then
+        echo "  dmenu: $DMENU_DIR"
+    fi
+    if [[ "$BUILD_ST" == true ]]; then
+        echo "  st:    $ST_DIR"
+    fi
+    echo
+    log_info "To customize DWM, edit config.h in the source directories and rebuild."
+}
+
+main "$@"
