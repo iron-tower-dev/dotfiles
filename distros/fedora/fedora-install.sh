@@ -462,7 +462,7 @@ setup_development_tools() {
         fi
         
         # The checksum file may contain either "<sha>  <filename>" or just the digest; normalize
-        if grep -qE "^[0-9a-fA-F]{64}\\s+" "$sumfile"; then
+        if grep -qE "^[0-9a-fA-F]{64}[[:space:]]+" "$sumfile"; then
             # If the checksum file contains filename, ensure it matches our dest basename
             if ! grep -q "$(basename "$dest")" "$sumfile"; then
                 # Create a matching line
