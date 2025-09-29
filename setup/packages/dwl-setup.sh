@@ -46,6 +46,7 @@ install_dependencies() {
         git
         wayland
         wayland-protocols
+        wlroots
         libinput
         libxkbcommon
         pixman
@@ -97,46 +98,84 @@ install_dependencies() {
     fi
 }
 
-# Check for AUR helper
-check_aur_helper() {
-    if command -v yay &> /dev/null; then
-        echo "yay"
-    elif command -v paru &> /dev/null; then
-        echo "paru"
-    else
-        log_error "No AUR helper found. Please install yay or paru first."
-        exit 1
-    fi
-}
-
-# Install dwl from AUR
-install_dwl() {
-    log_info "Installing dwl from AUR..."
+# Build dwl from source
+build_dwl() {
+    log_info "Building dwl from source..."
     
-    local aur_helper=$(check_aur_helper)
-    log_info "Using AUR helper: $aur_helper"
-    
-    # Install dwl-git from AUR (includes all dependencies)
-    log_info "Installing dwl-git package..."
-    $aur_helper -S --needed --noconfirm dwl-git
-    
-    if [ $? -eq 0 ]; then
-        log_success "dwl installed successfully from AUR"
-    else
-        log_error "Failed to install dwl from AUR"
-        log_info "You can try manually: $aur_helper -S dwl-git"
-        exit 1
+    # Verify wlroots is installed
+    if ! pacman -Qi wlroots &>/dev/null; then
+        log_error "wlroots is not installed. Installing now..."
+        sudo pacman -S --needed --noconfirm wlroots
+        if [ $? -ne 0 ]; then
+            log_error "Failed to install wlroots"
+            log_info "Try manually: sudo pacman -S wlroots"
+            exit 1
+        fi
     fi
     
-    # Copy default config for reference
+    log_success "wlroots is installed"
+    
+    local dwl_src="/tmp/dwl-build-$$"
     local dwl_config_src="$HOME/dotfiles/dwl/.config/dwl"
-    mkdir -p "$dwl_config_src"
     
-    # Note: AUR package installs to /usr/bin/dwl
-    # Config customization requires rebuilding from source
-    log_info "dwl installed to /usr/bin/dwl"
-    log_info "To customize configuration, you'll need to build from source"
-    log_info "See: https://codeberg.org/dwl/dwl"
+    # Clean any existing build directory
+    rm -rf "$dwl_src"
+    
+    # Clone dwl repository
+    log_info "Cloning dwl repository..."
+    if ! git clone https://codeberg.org/dwl/dwl.git "$dwl_src"; then
+        log_error "Failed to clone dwl repository"
+        exit 1
+    fi
+    
+    cd "$dwl_src" || exit 1
+    
+    # Check if custom config.def.h exists in dotfiles
+    if [ -f "$dwl_config_src/config.def.h" ]; then
+        log_info "Using custom config.def.h from dotfiles..."
+        cp "$dwl_config_src/config.def.h" config.def.h
+    else
+        log_info "Using default configuration (you can customize later)"
+    fi
+    
+    # Build dwl
+    log_info "Compiling dwl..."
+    if ! make clean; then
+        log_error "make clean failed"
+        cd - > /dev/null
+        rm -rf "$dwl_src"
+        exit 1
+    fi
+    
+    if ! make; then
+        log_error "Compilation failed"
+        log_error "Check if wlroots headers are available: pkg-config --modversion wlroots"
+        cd - > /dev/null
+        rm -rf "$dwl_src"
+        exit 1
+    fi
+    
+    # Install dwl
+    log_info "Installing dwl to /usr/local/bin..."
+    if ! sudo make install; then
+        log_error "Installation failed"
+        cd - > /dev/null
+        rm -rf "$dwl_src"
+        exit 1
+    fi
+    
+    # Copy default config to dotfiles if it doesn't exist
+    if [ ! -f "$dwl_config_src/config.def.h" ]; then
+        mkdir -p "$dwl_config_src"
+        cp config.def.h "$dwl_config_src/config.def.h"
+        log_success "Default config.def.h copied to dotfiles"
+    fi
+    
+    log_success "dwl installed successfully to /usr/local/bin/dwl"
+    
+    # Cleanup
+    cd - > /dev/null
+    rm -rf "$dwl_src"
 }
 
 # Create autostart script
@@ -394,7 +433,7 @@ main() {
     
     check_arch_linux
     install_dependencies
-    install_dwl
+    build_dwl
     create_autostart
     create_session_files
     create_helper_scripts
