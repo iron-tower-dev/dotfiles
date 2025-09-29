@@ -10,7 +10,7 @@ dotnet = "latest"
 java = "25.0.0"
 leiningen = "latest"
 node = "22.19.0"
-pnpm = "latest"
+pnpm = "10"
 usage = "latest"
 uv = "latest"
 

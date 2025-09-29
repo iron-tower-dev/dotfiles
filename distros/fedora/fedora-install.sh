@@ -11,7 +11,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
@@ -171,8 +170,8 @@ install_base_packages() {
     # Enable RPM Fusion repositories
     log_info "Enabling RPM Fusion repositories..."
     sudo dnf install -y \
-        https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
-        https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true
+        "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
+        "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm" || true
     
     # Install core packages
     log_info "Installing core packages..."
@@ -209,15 +208,21 @@ install_display_server_packages() {
     if [[ "$SELECTED_DISPLAY_SERVER" == "wayland" ]]; then
         log_info "Installing Wayland packages..."
         
-        # Wayland core packages
+        # Wayland runtime packages (no -devel packages for end users)
         sudo dnf install -y \
-            wayland-devel \
-            wayland-protocols-devel \
+            wayland \
+            wayland-protocols \
             xorg-x11-server-Xwayland \
             wl-clipboard \
             grim \
-            slurp \
-            xdg-desktop-portal-wlr
+            slurp
+        
+        # Install appropriate XDG portal based on window manager
+        if [[ "$SELECTED_WINDOW_MANAGER" == "hyprland" ]]; then
+            sudo dnf install -y xdg-desktop-portal-hyprland || sudo dnf install -y xdg-desktop-portal-wlr
+        else
+            sudo dnf install -y xdg-desktop-portal-wlr
+        fi
             
     else
         log_info "Installing X11 packages..."
@@ -243,16 +248,32 @@ install_window_manager() {
     
     case "$SELECTED_WINDOW_MANAGER" in
         hyprland)
-            bash "$DOTFILES_DIR/window_managers/hyprland/install-hyprland.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/hyprland/install-hyprland.sh" ]]; then
+                bash "$DOTFILES_DIR/window_managers/hyprland/install-hyprland.sh"
+            else
+                log_error "Hyprland installer not found"; exit 1
+            fi
             ;;
         qtile)
-            bash "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh" ]]; then
+                bash "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh"
+            else
+                log_error "Qtile installer not found"; exit 1
+            fi
             ;;
         dwm)
-            bash "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh" ]]; then
+                bash "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh"
+            else
+                log_error "DWM installer not found"; exit 1
+            fi
             ;;
         dwl)
-            bash "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh" ]]; then
+                bash "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh"
+            else
+                log_error "DWL installer not found"; exit 1
+            fi
             ;;
         *)
             log_error "Unknown window manager: $SELECTED_WINDOW_MANAGER"
@@ -265,23 +286,19 @@ install_window_manager() {
 setup_themes() {
     log_header "SETTING UP THEMES"
     
-    # Install GTK themes and icon packs
+    # Install GTK themes and icon packs (runtime packages only)
     log_info "Installing theme packages..."
     sudo dnf install -y \
-        gtk3-devel \
-        gtk4-devel \
+        gtk3 \
+        gtk4 \
+        adwaita-gtk3-theme \
         qt5ct \
         qt6ct \
         kvantum \
         papirus-icon-theme \
         breeze-icon-theme
     
-    # Install additional theme tools
-    sudo dnf install -y \
-        lxappearance \
-        qt5ct \
-        kvantum || log_warning "Some theme tools may not be available"
-    
+    # lxappearance is already installed in X11 section if needed
     log_success "Theme packages installed"
 }
 
@@ -306,9 +323,13 @@ configure_system() {
 configure_fish_shell() {
     log_info "Configuring Fish shell..."
     
-    # Add fish to valid shells and set as default if desired
-    if ! grep -q "$(which fish)" /etc/shells; then
-        echo "$(which fish)" | sudo tee -a /etc/shells
+    # Add fish to valid shells if available
+    if command -v fish &>/dev/null; then
+        local fish_path
+        fish_path="$(command -v fish || true)"
+        if [[ -n "$fish_path" ]] && ! grep -qx "$fish_path" /etc/shells; then
+            echo "$fish_path" | sudo tee -a /etc/shells >/dev/null
+        fi
     fi
     
     # Create fish config directory
@@ -337,7 +358,7 @@ setup_development_tools() {
     # Install mise (modern tool version manager)
     if ! command -v mise &> /dev/null; then
         log_info "Installing mise..."
-        curl https://mise.run | sh
+        curl -fsSL https://mise.run | sh
         echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
         echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc
     fi
@@ -345,7 +366,7 @@ setup_development_tools() {
     # Install UV for Python package management
     if ! command -v uv &> /dev/null; then
         log_info "Installing UV (Python package manager)..."
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+        curl -fsSL https://astral.sh/uv/install.sh | sh
     fi
     
     log_success "Development tools configured"
@@ -358,17 +379,46 @@ setup_display_manager() {
     if [[ "$SELECTED_DISPLAY_SERVER" == "wayland" ]]; then
         # Use GDM for Wayland (default on Fedora)
         log_info "Configuring GDM for Wayland support..."
-        sudo systemctl enable gdm
-        
-        # Ensure Wayland is enabled in GDM
+
+        # Ensure GDM is installed before enabling
+        if ! rpm -q gdm &>/dev/null; then
+            log_info "Installing GDM..."
+            sudo dnf install -y gdm
+        fi
+
+        # Idempotently configure /etc/gdm/custom.conf
         sudo mkdir -p /etc/gdm
-        echo "[daemon]" | sudo tee /etc/gdm/custom.conf
-        echo "WaylandEnable=true" | sudo tee -a /etc/gdm/custom.conf
+        if [[ -f /etc/gdm/custom.conf ]]; then
+            sudo cp /etc/gdm/custom.conf "/etc/gdm/custom.conf.bak.$(date +%Y%m%d-%H%M%S)"
+        fi
+
+        if [[ ! -f /etc/gdm/custom.conf ]]; then
+            # Create with [daemon] and WaylandEnable=true
+            printf "[daemon]\nWaylandEnable=true\n" | sudo tee /etc/gdm/custom.conf >/dev/null
+        else
+            # Ensure [daemon] section exists
+            if ! sudo grep -q "^\[daemon\]" /etc/gdm/custom.conf; then
+                echo "[daemon]" | sudo tee -a /etc/gdm/custom.conf >/dev/null
+            fi
+            # Normalize any existing WaylandEnable line (commented or not)
+            if sudo grep -qE "^[#;]?\s*WaylandEnable\s*=.*" /etc/gdm/custom.conf; then
+                sudo sed -i -E 's/^[#;]?\s*WaylandEnable\s*=.*/WaylandEnable=true/' /etc/gdm/custom.conf
+            else
+                # Insert under the first [daemon] section
+                sudo sed -i '/^\[daemon\]/a WaylandEnable=true' /etc/gdm/custom.conf
+            fi
+        fi
+
+        # Enable and start GDM
+        sudo systemctl enable --now gdm
     else
-        # For X11, we can use GDM or lighter alternatives
-        log_info "Display manager setup..."
-        log_info "GDM will be used for X11 session management"
-        sudo systemctl enable gdm
+        # For X11, ensure GDM is installed then enable
+        log_info "Setting up GDM for X11 session management..."
+        if ! rpm -q gdm &>/dev/null; then
+            log_info "Installing GDM..."
+            sudo dnf install -y gdm
+        fi
+        sudo systemctl enable --now gdm
     fi
 }
 
@@ -520,18 +570,40 @@ EOF
 configure_selinux() {
     log_info "Configuring SELinux for window managers..."
     
-    # Some window managers may need SELinux adjustments
-    if command -v selinux &> /dev/null; then
-        case "$SELECTED_WINDOW_MANAGER" in
-            hyprland|dwl)
-                # Wayland compositors may need specific SELinux contexts
-                log_info "Wayland compositors should work with default SELinux policy"
+    # Check if SELinux commands are available
+    if command -v getenforce &>/dev/null; then
+        local selinux_state
+        selinux_state="$(getenforce 2>/dev/null || echo "Unknown")"
+        
+        log_info "SELinux status: $selinux_state"
+        
+        case "$selinux_state" in
+            "Enforcing")
+                log_info "SELinux is in Enforcing mode - desktop should work with default policy"
+                case "$SELECTED_WINDOW_MANAGER" in
+                    hyprland|dwl)
+                        log_info "Wayland compositors are generally compatible with SELinux"
+                        ;;
+                    qtile|dwm)
+                        log_info "X11 window managers work well with SELinux"
+                        ;;
+                esac
                 ;;
-            qtile|dwm)
-                # X11 window managers typically work fine
-                log_info "X11 window managers should work with default SELinux policy"
+            "Permissive")
+                log_info "SELinux is in Permissive mode - logging violations but allowing access"
+                ;;
+            "Disabled")
+                log_info "SELinux is disabled"
+                ;;
+            *)
+                log_warning "Unable to determine SELinux state"
                 ;;
         esac
+    elif command -v sestatus &>/dev/null; then
+        log_info "Using sestatus for SELinux information:"
+        sestatus 2>/dev/null || log_warning "Failed to get SELinux status"
+    else
+        log_info "SELinux tools not available - assuming disabled or not installed"
     fi
 }
 

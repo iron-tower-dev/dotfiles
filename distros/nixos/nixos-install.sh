@@ -12,7 +12,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
@@ -25,14 +24,10 @@ log_header() { echo -e "${PURPLE}[SETUP]${NC} $1"; }
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOTFILES_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
-NIXOS_CONFIG_DIR="$DOTFILES_DIR/nixos"
 
 # Global variables
 SELECTED_DISPLAY_SERVER=""
 SELECTED_WINDOW_MANAGER=""
-HOSTNAME=""
-USERNAME="$USER"
-USE_EXISTING_NIXOS_CONFIG=false
 
 # Banner
 display_banner() {
@@ -190,7 +185,14 @@ generate_system_config() {
 
 { config, pkgs, ... }:
 
+let
+  # Define the Home Manager configuration URL
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/release-23.11.tar.gz";
+in
 {
+  imports = [
+    (import "\${home-manager}/nixos")
+  ];
   # Enable the X11 windowing system or Wayland
 $(if [[ "$SELECTED_DISPLAY_SERVER" == "wayland" ]]; then
 cat << 'WAYLAND_CONFIG'
@@ -202,27 +204,21 @@ cat << 'WAYLAND_CONFIG'
     };
   };
   
-  # Wayland-specific packages
+  # Display server specific configuration and packages
   environment.systemPackages = with pkgs; [
+$(if [[ "$SELECTED_DISPLAY_SERVER" == "wayland" ]]; then
+cat << 'WAYLAND_PACKAGES'
+    # Wayland-specific packages
     wayland
     wayland-protocols
     xwayland
     wl-clipboard
     grim
     slurp
-WAYLAND_CONFIG
+WAYLAND_PACKAGES
 else
-cat << 'X11_CONFIG'
-  services.xserver = {
-    enable = true;
-    displayManager.gdm.enable = true;
-    
-    # Enable touchpad support (enabled default in most desktopManager).
-    libinput.enable = true;
-  };
-  
-  # X11-specific packages
-  environment.systemPackages = with pkgs; [
+cat << 'X11_PACKAGES'
+    # X11-specific packages
     xorg.xorgserver
     xorg.xinit
     picom
@@ -231,10 +227,9 @@ cat << 'X11_CONFIG'
     xclip
     arandr
     lxappearance
-X11_CONFIG
+X11_PACKAGES
 fi)
-$(generate_window_manager_config)
-
+    
     # Core applications and tools
     alacritty
     firefox
@@ -267,12 +262,26 @@ $(generate_window_manager_config)
     font-awesome
     
     # Theme packages
-    lxappearance
     qt5ct
     libsForQt5.qtstyleplugin-kvantum
     papirus-icon-theme
     breeze-icons
+    
+$(generate_window_manager_packages)
   ];
+WAYLAND_CONFIG
+else
+cat << 'X11_CONFIG'
+  services.xserver = {
+    enable = true;
+    displayManager.gdm.enable = true;
+    
+    # Enable touchpad support (enabled default in most desktopManager).
+    libinput.enable = true;
+  };
+X11_CONFIG
+fi)
+$(generate_window_manager_config)
   
   # Enable sound with pipewire
   sound.enable = true;
@@ -296,8 +305,22 @@ $(generate_window_manager_config)
   programs.fish.enable = true;
   programs.zsh.enable = true;
   
-  # Enable home-manager for user configuration
-  programs.home-manager.enable = true;
+  # Configure Home Manager for users
+  home-manager.useGlobalPkgs = true;
+  home-manager.useUserPackages = true;
+  
+  # Example user configuration (replace 'username' with actual username)
+  # home-manager.users.username = { pkgs, ... }: {
+  #   home.packages = with pkgs; [
+  #     # User-specific packages can be added here
+  #   ];
+  #   programs.git = {
+  #     enable = true;
+  #     userName = "Your Name";
+  #     userEmail = "your.email@example.com";
+  #   };
+  #   home.stateVersion = "23.11";
+  # };
   
   # Configure fonts
   fonts.packages = with pkgs; [
@@ -325,7 +348,14 @@ EOF
     log_info "To apply this configuration:"
     echo "1. Review the generated configuration: $config_file"
     echo "2. Merge it with your existing /etc/nixos/configuration.nix"
-    echo "3. Run: sudo nixos-rebuild switch"
+    echo "3. Uncomment and customize the home-manager.users.<username> section"
+    echo "4. Replace '<username>' with your actual username"
+    echo "5. Run: sudo nixos-rebuild switch"
+    echo
+    log_info "Home Manager Notes:"
+    echo "• Home Manager is configured to manage user-level packages and dotfiles"
+    echo "• Uncomment the home-manager.users section and customize it for each user"
+    echo "• User configurations allow per-user package management and settings"
     echo
     log_warning "IMPORTANT: Back up your existing configuration before merging!"
 }
@@ -347,8 +377,38 @@ generate_window_manager_config() {
     enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-hyprland ];
   };
+HYPRLAND_CONFIG
+            ;;
+        qtile)
+            cat << 'QTILE_CONFIG'
   
-  # Hyprland-specific packages
+  # Qtile configuration  
+  services.xserver.windowManager.qtile.enable = true;
+QTILE_CONFIG
+            ;;
+        dwm)
+            cat << 'DWM_CONFIG'
+  
+  # DWM configuration (requires building from source)
+  services.xserver.windowManager.dwm.enable = true;
+DWM_CONFIG
+            ;;
+        dwl)
+            cat << 'DWL_CONFIG'
+  
+  # DWL configuration (Wayland suckless WM)
+  # Note: DWL may need to be built from source or overlay
+DWL_CONFIG
+            ;;
+    esac
+}
+
+# Generate window manager specific packages
+generate_window_manager_packages() {
+    case "$SELECTED_WINDOW_MANAGER" in
+        hyprland)
+            cat << 'HYPRLAND_PACKAGES'
+    # Hyprland-specific packages
     waybar
     rofi-wayland
     dunst
@@ -362,15 +422,11 @@ generate_window_manager_config() {
     xfce.thunar
     xfce.thunar-archive-plugin
     file-roller
-HYPRLAND_CONFIG
+HYPRLAND_PACKAGES
             ;;
         qtile)
-            cat << 'QTILE_CONFIG'
-  
-  # Qtile configuration  
-  services.xserver.windowManager.qtile.enable = true;
-  
-  # Qtile-specific packages
+            cat << 'QTILE_PACKAGES'
+    # Qtile-specific packages
     python3Packages.qtile
     python3Packages.psutil
     python3Packages.dbus-python
@@ -383,15 +439,11 @@ HYPRLAND_CONFIG
     xfce.thunar-archive-plugin
     file-roller
     scrot
-QTILE_CONFIG
+QTILE_PACKAGES
             ;;
         dwm)
-            cat << 'DWM_CONFIG'
-  
-  # DWM configuration (requires building from source)
-  services.xserver.windowManager.dwm.enable = true;
-  
-  # DWM-specific packages
+            cat << 'DWM_PACKAGES'
+    # DWM-specific packages
     dwm
     dmenu
     st
@@ -404,15 +456,11 @@ QTILE_CONFIG
     xfce.thunar-archive-plugin
     file-roller
     scrot
-DWM_CONFIG
+DWM_PACKAGES
             ;;
         dwl)
-            cat << 'DWL_CONFIG'
-  
-  # DWL configuration (Wayland suckless WM)
-  # Note: DWL may need to be built from source or overlay
-  
-  # DWL-specific packages
+            cat << 'DWL_PACKAGES'
+    # DWL-specific packages
     # dwl  # May need overlay or manual build
     foot
     wofi
@@ -426,7 +474,7 @@ DWM_CONFIG
     wlopm
     wbg
     brightnessctl
-DWL_CONFIG
+DWL_PACKAGES
             ;;
     esac
 }
@@ -436,7 +484,8 @@ generate_home_manager_config() {
     log_header "GENERATING HOME MANAGER CONFIGURATION"
     
     local home_config_file="$HOME/.config/nixpkgs/home.nix"
-    local home_config_dir="$(dirname "$home_config_file")"
+    local home_config_dir
+    home_config_dir="$(dirname "$home_config_file")"
     
     mkdir -p "$home_config_dir"
     
@@ -471,8 +520,8 @@ $(generate_home_manager_programs)
   # Git configuration
   programs.git = {
     enable = true;
-    userName = "$(git config --get user.name 2>/dev/null || echo "Your Name")";
-    userEmail = "$(git config --get user.email 2>/dev/null || echo "your.email@example.com")";
+    userName = "Your Name";      # TODO: set your name
+    userEmail = "your.email@example.com";  # TODO: set your email
   };
   
   # Shell configuration
@@ -558,9 +607,8 @@ EOF
     log_info "To apply this configuration:"
     echo "1. Review the generated configuration: $home_config_file"
     echo "2. Install home-manager if not already installed:"
-    echo "   nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.11.tar.gz home-manager"
-    echo "   nix-channel --update"
-    echo "   nix-shell '<home-manager>' -A install"
+    echo "   nix run home-manager/release-24.05 -- init --switch"
+    echo "   # or use flakes if enabled: nix run home-manager/master -- init --switch --flake ~/.config/nixpkgs"
     echo "3. Run: home-manager switch"
 }
 
@@ -767,9 +815,8 @@ show_final_instructions() {
         log_info "Home Manager Configuration Next Steps:"
         echo "1. Review the generated configuration in ~/.config/nixpkgs/home.nix"
         echo "2. Install home-manager if not already installed:"
-        echo "   nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.11.tar.gz home-manager"
-        echo "   nix-channel --update"
-        echo "   nix-shell '<home-manager>' -A install"
+        echo "   nix run home-manager/release-24.05 -- init --switch"
+        echo "   # or use flakes if enabled: nix run home-manager/master -- init --switch --flake ~/.config/nixpkgs"
         echo "3. Run: home-manager switch"
     fi
     

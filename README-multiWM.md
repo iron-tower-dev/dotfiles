@@ -6,9 +6,9 @@ This is a comprehensive dotfiles system that supports multiple Linux distributio
 
 ### Distribution Support
 - **Arch Linux** (including Manjaro) - ✅ Full support
-- **Debian/Ubuntu** - 🚧 Planned
-- **Fedora/RHEL** - 🚧 Planned  
-- **NixOS** - 🚧 Planned
+- **Debian/Ubuntu** - ⚠️ Partial via Hyprland script
+- **Fedora/RHEL** - ✅ Full support  
+- **NixOS** - ✅ Full support
 
 ### Window Manager Support
 
@@ -42,13 +42,15 @@ cd ~/dotfiles
 
 ## 📁 Directory Structure
 
-```
+```text
 dotfiles/
 ├── bootstrap.sh              # Main dispatcher script
 ├── distros/                  # Distribution-specific installers
 │   └── arch/
 │       └── arch-install.sh   # Arch Linux installer with WM selection
 ├── window_managers/          # Window manager installation scripts
+│   ├── hyprland/
+│   │   └── install-hyprland.sh  # Hyprland installation and configuration
 │   ├── qtile/
 │   │   └── install-qtile.sh  # Qtile installation and configuration
 │   ├── dwm/

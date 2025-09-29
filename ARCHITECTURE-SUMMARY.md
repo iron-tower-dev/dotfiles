@@ -37,7 +37,7 @@ We successfully expanded your dotfiles from Arch Linux + Hyprland only to a comp
 - **Consistent interface**: Matches the structure of other window managers
 
 #### All Window Managers Now Unified:
-```
+```text
 window_managers/
 ├── hyprland/install-hyprland.sh  ✨ (NEW - unified across distributions)
 ├── qtile/install-qtile.sh        ✅ (existing)
@@ -53,7 +53,7 @@ window_managers/
 - **Backward compatibility**: All existing workflows continue to work exactly as before
 
 #### Distribution Structure
-```
+```text
 distros/
 ├── arch/arch-install.sh      ✅ Enhanced Arch installer
 ├── fedora/fedora-install.sh  ✨ NEW Fedora support

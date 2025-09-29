@@ -12,7 +12,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
@@ -27,6 +26,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOTFILES_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 NIXOS_CONFIG_DIR="$DOTFILES_DIR/nixos"
 
+# Configuration flags
+# Set to true to enable passwordless sudo for wheel group users
+# WARNING: This reduces security by allowing admin commands without password verification
+# Default: false (requires password for sudo commands)
+ENABLE_PASSWORDLESS_SUDO=false
+
 # Global variables
 SELECTED_DISPLAY_SERVER=""
 SELECTED_WINDOW_MANAGER=""
@@ -34,6 +39,7 @@ HOSTNAME=""
 USERNAME="$USER"
 USER_FULL_NAME=""
 USER_EMAIL=""
+TIMEZONE=""
 
 # Banner
 display_banner() {
@@ -103,11 +109,48 @@ get_system_info() {
     # Get email
     read -p "Email address: " USER_EMAIL
     
+    # Get timezone (detect current or prompt)
+    local detected_timezone
+    if command -v timedatectl &> /dev/null; then
+        detected_timezone=$(timedatectl show --property=Timezone --value 2>/dev/null || echo "")
+    fi
+    
+    if [[ -n "$detected_timezone" ]]; then
+        TIMEZONE="$detected_timezone"
+        read -p "Timezone [$TIMEZONE]: " timezone_input
+        if [[ -n "$timezone_input" ]]; then
+            TIMEZONE="$timezone_input"
+        fi
+    else
+        TIMEZONE="America/New_York"
+        read -p "Timezone [$TIMEZONE]: " timezone_input
+        if [[ -n "$timezone_input" ]]; then
+            TIMEZONE="$timezone_input"
+        fi
+    fi
+    
+    # Ask about passwordless sudo
+    echo
+    log_warning "SECURITY OPTION: Sudo Configuration"
+    echo "By default, sudo commands will require your password for security."
+    echo "You can optionally enable passwordless sudo for convenience (less secure)."
+    echo
+    read -p "Enable passwordless sudo? (y/N): " passwordless_sudo_choice
+    if [[ "$passwordless_sudo_choice" =~ ^[Yy]$ ]]; then
+        ENABLE_PASSWORDLESS_SUDO=true
+        log_warning "Passwordless sudo ENABLED - reduced security"
+    else
+        ENABLE_PASSWORDLESS_SUDO=false
+        log_info "Passwordless sudo DISABLED - password required (secure)"
+    fi
+    
     log_info "System configuration:"
     log_info "  Hostname: $HOSTNAME"
     log_info "  Username: $USERNAME"
     log_info "  Full name: $USER_FULL_NAME"
     log_info "  Email: $USER_EMAIL"
+    log_info "  Timezone: $TIMEZONE"
+    log_info "  Passwordless sudo: $ENABLE_PASSWORDLESS_SUDO"
 }
 
 # Display server selection
@@ -319,7 +362,7 @@ generate_host_configuration() {
   nixpkgs.config.allowUnfree = true;
   
   # Set your time zone
-  time.timeZone = "America/New_York"; # Change this to your timezone
+  time.timeZone = "$TIMEZONE";
   
   # Select internationalisation properties
   i18n.defaultLocale = "en_US.UTF-8";
@@ -331,9 +374,15 @@ generate_host_configuration() {
     extraGroups = [ "networkmanager" "wheel" "video" "audio" "docker" ];
     shell = pkgs.fish;
   };
-  
-  # Enable sudo for wheel group
-  security.sudo.wheelNeedsPassword = false;
+  $(if [[ "$ENABLE_PASSWORDLESS_SUDO" == "true" ]]; then
+    echo "  "
+    echo "  # Enable passwordless sudo for wheel group (SECURITY WARNING: Less secure)"
+    echo "  security.sudo.wheelNeedsPassword = false;"
+else
+    echo "  "
+    echo "  # Require password for sudo (secure default)"
+    echo "  # security.sudo.wheelNeedsPassword = true;  # This is the default"
+fi)
   
   # System packages
   environment.systemPackages = with pkgs; [
@@ -759,14 +808,16 @@ with lib;
 
 {
   config = mkIf (config.desktop.enable && config.desktop.windowManager == "dwl") {
-    # DWL packages (may need overlay)
+    # DWL packages (basic ones available in nixpkgs)
     environment.systemPackages = with pkgs; [
       foot
       wofi
       dunst
-      wbg
-      wlopm
       brightnessctl
+      # NOTE: wbg and wlopm may not be available in nixpkgs
+      # Consider adding via overlays or custom derivations
+      # wbg
+      # wlopm
     ];
   };
 }
@@ -965,11 +1016,13 @@ EOF
             ;;
         dwl)
             cat << 'EOF'
-    # DWL specific packages
+    # DWL specific packages (basic ones available in nixpkgs)
     foot
     wofi
     dunst
-    wbg
+    # NOTE: wbg and wlopm may not be available in nixpkgs
+    # Consider adding via overlays if needed:
+    # wbg
 EOF
             ;;
     esac
@@ -1066,6 +1119,8 @@ deploy_dotfiles() {
     
     if ! command -v stow &> /dev/null; then
         log_info "Installing stow via nix-env..."
+        # NOTE: Using nix-env for stow is non-declarative but needed for initial dotfiles deployment
+        # Consider adding stow to your system packages for full declarative management
         nix-env -iA nixpkgs.stow
     fi
     
@@ -1148,6 +1203,23 @@ nixos/
 - **Window Manager**: $SELECTED_WINDOW_MANAGER
 - **Hostname**: $HOSTNAME
 - **User**: $USERNAME
+- **Timezone**: $TIMEZONE
+- **Passwordless Sudo**: $ENABLE_PASSWORDLESS_SUDO
+
+### Security Configuration
+
+**Sudo Password Policy**: $(if [[ "$ENABLE_PASSWORDLESS_SUDO" == "true" ]]; then
+    echo "⚠️  **PASSWORDLESS SUDO ENABLED** - Admin commands do not require password verification"
+    echo ""
+    echo "This configuration reduces security but increases convenience. Consider:"
+    echo "- Only enable on personal development machines"
+    echo "- Never enable on production or shared systems"
+    echo "- To disable: Edit \`hosts/$HOSTNAME/configuration.nix\` and set \`security.sudo.wheelNeedsPassword = true;\`"
+else
+    echo "🔒 **SECURE DEFAULT** - Sudo commands require password verification"
+    echo ""
+    echo "This is the recommended secure configuration. Sudo commands will prompt for your user password."
+fi)
 
 ## Usage
 
@@ -1239,6 +1311,8 @@ show_final_instructions() {
     echo "  Window Manager: $SELECTED_WINDOW_MANAGER"
     echo "  Hostname: $HOSTNAME"
     echo "  User: $USERNAME"
+    echo "  Timezone: $TIMEZONE"
+    echo "  Passwordless Sudo: $ENABLE_PASSWORDLESS_SUDO"
     echo "  Configuration Path: $NIXOS_CONFIG_DIR"
     echo
     
@@ -1282,6 +1356,9 @@ show_final_instructions() {
     echo "  • Review all generated files before switching"
     echo "  • Keep your flake.lock in version control"
     echo "  • Test configurations with 'build' before 'switch'"
+    if [[ "$ENABLE_PASSWORDLESS_SUDO" == "true" ]]; then
+        echo "  ⚠️  SECURITY: Passwordless sudo enabled - review security implications"
+    fi
     echo
     
     log_info "Documentation created: $NIXOS_CONFIG_DIR/README.md"

@@ -2,6 +2,8 @@
 
 # DWL Installation Script
 # DWL is the Wayland equivalent of DWM - suckless dynamic window manager for Wayland
+# 
+# NOTE: This installer is designed for Arch-based systems using pacman
 
 set -euo pipefail
 
@@ -25,6 +27,13 @@ DWL_DIR="$BUILD_DIR/dwl"
 install_build_deps() {
     log_info "Installing build dependencies for DWL..."
     
+    # Check if running on Arch-based system
+    if ! command -v pacman >/dev/null 2>&1; then
+        log_error "This DWL installer currently supports Arch-based systems (pacman)."
+        log_error "For other distributions, please install DWL manually or use your distribution's package manager."
+        exit 1
+    fi
+    
     sudo pacman -S --needed --noconfirm \
         base-devel \
         git \
@@ -34,7 +43,6 @@ install_build_deps() {
         libxkbcommon \
         pixman \
         libdrm \
-        libxkbcommon \
         xorg-xwayland \
         pkgconf \
         scdoc
@@ -46,6 +54,12 @@ install_build_deps() {
 install_wayland_tools() {
     log_info "Installing Wayland tools and utilities..."
     
+    # Arch check should have been done in install_build_deps, but double-check for safety
+    if ! command -v pacman >/dev/null 2>&1; then
+        log_error "pacman not found - this installer requires an Arch-based system"
+        exit 1
+    fi
+    
     sudo pacman -S --needed --noconfirm \
         alacritty \
         foot \
@@ -55,6 +69,7 @@ install_wayland_tools() {
         wl-clipboard \
         swaylock \
         swayidle \
+        swaybg \
         mako \
         waybar \
         wdisplays \
@@ -296,8 +311,14 @@ create_autostart_script() {
 
 # DWL autostart script
 
-# Set wallpaper background
-wbg ~/.config/wallpapers/current.jpg &
+# Set wallpaper background (with fallback)
+if command -v wbg &> /dev/null; then
+    wbg ~/.config/wallpapers/current.jpg &
+elif command -v swaybg &> /dev/null; then
+    swaybg -i ~/.config/wallpapers/current.jpg &
+else
+    echo "Warning: No wallpaper setter found (wbg or swaybg)"
+fi
 
 # Start notification daemon
 mako &
@@ -305,12 +326,20 @@ mako &
 # Start status bar
 waybar &
 
-# Start idle management
-swayidle -w \
-    timeout 300 'swaylock -f -c 24273a' \
-    timeout 600 'wlopm --off "*"' \
-    resume 'wlopm --on "*"' \
-    before-sleep 'swaylock -f -c 24273a' &
+# Start idle management (with optional power management)
+if command -v wlopm &> /dev/null; then
+    # Full idle management with display power control
+    swayidle -w \
+        timeout 300 'swaylock -f -c 24273a' \
+        timeout 600 'wlopm --off "*"' \
+        resume 'wlopm --on "*"' \
+        before-sleep 'swaylock -f -c 24273a' &
+else
+    # Basic idle management without power control
+    swayidle -w \
+        timeout 300 'swaylock -f -c 24273a' \
+        before-sleep 'swaylock -f -c 24273a' &
+fi
 
 # Start any other applications you want
 EOF
@@ -335,7 +364,7 @@ Wants=graphical-session.target
 After=graphical-session.target
 
 [Service]
-Type=notify
+Type=simple
 ExecStart=/usr/local/bin/dwl
 Restart=on-failure
 RestartSec=1
@@ -358,7 +387,8 @@ create_wayland_session() {
 [Desktop Entry]
 Name=DWL
 Comment=Dynamic Window Manager for Wayland
-Exec=dwl
+TryExec=/usr/local/bin/dwl
+Exec=/usr/local/bin/dwl
 Type=Application
 EOF
     
@@ -372,8 +402,8 @@ install_optional_tools() {
     # Ask user about optional packages
     echo
     log_info "Optional tools (recommended):"
-    echo "- wbg: wallpaper setter"
-    echo "- wlopm: output power management"
+    echo "- wbg: wallpaper setter (will fallback to swaybg if not available)"
+    echo "- wlopm: output power management (idle timeout will skip display power control if not available)"
     echo "- brightnessctl: brightness control"
     
     read -p "Install optional tools? (Y/n): " install_optional

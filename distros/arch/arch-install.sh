@@ -11,7 +11,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
@@ -57,7 +56,7 @@ check_system() {
 # Make scripts executable
 make_scripts_executable() {
     log_info "Making setup scripts executable..."
-    find "$SETUP_DIR" -name "*.sh" -type f -exec chmod +x {} \;
+    find "$SETUP_DIR" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
     find "$DOTFILES_DIR/window_managers" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
     log_success "Setup scripts are now executable"
 }
@@ -186,8 +185,12 @@ install_display_server_packages() {
             wayland wayland-protocols \
             xorg-xwayland \
             wl-clipboard \
-            grim slurp \
-            xdg-desktop-portal-wlr
+            grim slurp
+        if [[ "$SELECTED_WINDOW_MANAGER" == "hyprland" ]]; then
+          sudo pacman -S --needed --noconfirm xdg-desktop-portal-hyprland || sudo pacman -S --needed --noconfirm xdg-desktop-portal-wlr
+        else
+          sudo pacman -S --needed --noconfirm xdg-desktop-portal-wlr
+        fi
             
     else
         log_info "Installing X11 packages..."
@@ -209,16 +212,32 @@ install_window_manager() {
     
     case "$SELECTED_WINDOW_MANAGER" in
         hyprland)
-            bash "$DOTFILES_DIR/window_managers/hyprland/install-hyprland.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/hyprland/install-hyprland.sh" ]]; then
+              bash "$DOTFILES_DIR/window_managers/hyprland/install-hyprland.sh"
+            else
+              log_error "Hyprland installer not found"; exit 1
+            fi
             ;;
         qtile)
-            bash "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh" ]]; then
+              bash "$DOTFILES_DIR/window_managers/qtile/install-qtile.sh"
+            else
+              log_error "Qtile installer not found"; exit 1
+            fi
             ;;
         dwm)
-            bash "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh" ]]; then
+              bash "$DOTFILES_DIR/window_managers/dwm/install-dwm.sh"
+            else
+              log_error "DWM installer not found"; exit 1
+            fi
             ;;
         dwl)
-            bash "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh"
+            if [[ -x "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh" ]]; then
+              bash "$DOTFILES_DIR/window_managers/dwl/install-dwl.sh"
+            else
+              log_error "DWL installer not found"; exit 1
+            fi
             ;;
         *)
             log_error "Unknown window manager: $SELECTED_WINDOW_MANAGER"

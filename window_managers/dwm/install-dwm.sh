@@ -2,6 +2,8 @@
 
 # DWM Installation Script
 # Suckless dynamic window manager for X11
+# 
+# Supports multiple distributions: Arch Linux, Fedora, Debian/Ubuntu, NixOS
 
 set -euo pipefail
 
@@ -12,10 +14,36 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Global variables
+DISTRO=""
+PKG_MANAGER=""
+
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Detect package manager and distribution
+detect_system() {
+    if command -v pacman &> /dev/null; then
+        DISTRO="arch"
+        PKG_MANAGER="pacman"
+    elif command -v dnf &> /dev/null; then
+        DISTRO="fedora"
+        PKG_MANAGER="dnf"
+    elif command -v apt &> /dev/null; then
+        DISTRO="debian"
+        PKG_MANAGER="apt"
+    elif command -v nix-env &> /dev/null; then
+        DISTRO="nixos"
+        PKG_MANAGER="nix"
+    else
+        log_error "Unsupported distribution or package manager not found"
+        exit 1
+    fi
+    
+    log_success "Detected: $DISTRO with $PKG_MANAGER"
+}
 
 # Build directory
 BUILD_DIR="$HOME/.local/src"
@@ -23,9 +51,16 @@ DWM_DIR="$BUILD_DIR/dwm"
 DMENU_DIR="$BUILD_DIR/dmenu"
 ST_DIR="$BUILD_DIR/st"
 
-# Install build dependencies
-install_build_deps() {
-    log_info "Installing build dependencies..."
+# Install build dependencies on Arch Linux
+install_build_deps_arch() {
+    log_info "Installing build dependencies on Arch Linux..."
+    
+    # Check if running on Arch-based system
+    if ! command -v pacman >/dev/null 2>&1; then
+        log_error "This DWM installer function requires Arch-based systems (pacman)."
+        log_error "For other distributions, the script should have detected them automatically."
+        exit 1
+    fi
     
     sudo pacman -S --needed --noconfirm \
         base-devel \
@@ -37,6 +72,96 @@ install_build_deps() {
         fontconfig
     
     log_success "Build dependencies installed"
+}
+
+# Install build dependencies on Fedora
+install_build_deps_fedora() {
+    log_info "Installing build dependencies on Fedora..."
+    
+    sudo dnf groupinstall -y "Development Tools"
+    sudo dnf install -y \
+        git \
+        libX11-devel \
+        libXft-devel \
+        libXinerama-devel \
+        freetype-devel \
+        fontconfig-devel \
+        make \
+        gcc
+    
+    log_success "Build dependencies installed"
+}
+
+# Install build dependencies on Debian/Ubuntu
+install_build_deps_debian() {
+    log_info "Installing build dependencies on Debian/Ubuntu..."
+    
+    sudo apt update
+    sudo apt install -y \
+        build-essential \
+        git \
+        libx11-dev \
+        libxft-dev \
+        libxinerama-dev \
+        libfreetype6-dev \
+        libfontconfig1-dev
+    
+    log_success "Build dependencies installed"
+}
+
+# Install build dependencies on NixOS
+install_build_deps_nixos() {
+    log_info "Installing build dependencies on NixOS..."
+    
+    log_warning "NixOS installation requires system configuration changes."
+    log_info "Please add the following to your NixOS configuration:"
+    
+    cat << 'EOF'
+# /etc/nixos/configuration.nix or equivalent
+{
+  services.xserver.windowManager.dwm.enable = true;
+
+  environment.systemPackages = with pkgs; [
+    dwm
+    dmenu
+    st
+    alacritty
+    rofi
+    feh
+    picom
+    scrot
+    networkmanagerapplet
+    blueman
+    pavucontrol
+    dunst
+  ];
+}
+EOF
+    
+    log_info "Then rebuild your system with: sudo nixos-rebuild switch"
+}
+
+# Install build dependencies based on detected distribution
+install_build_deps() {
+    case "$DISTRO" in
+        arch)
+            install_build_deps_arch
+            ;;
+        fedora)
+            install_build_deps_fedora
+            ;;
+        debian)
+            install_build_deps_debian
+            ;;
+        nixos)
+            install_build_deps_nixos
+            return 1  # Skip building on NixOS
+            ;;
+        *)
+            log_error "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+    esac
 }
 
 # Clone and build DWM
@@ -785,9 +910,15 @@ EOF
     log_success "st configuration created"
 }
 
-# Install additional tools
-install_additional_tools() {
-    log_info "Installing additional X11 tools..."
+# Install additional tools on Arch Linux
+install_additional_tools_arch() {
+    log_info "Installing additional X11 tools on Arch Linux..."
+    
+    # Arch check should have been done in system detection, but double-check for safety
+    if ! command -v pacman >/dev/null 2>&1; then
+        log_error "pacman not found - this function requires an Arch-based system"
+        exit 1
+    fi
     
     sudo pacman -S --needed --noconfirm \
         alacritty \
@@ -807,6 +938,72 @@ install_additional_tools() {
     log_success "Additional tools installed"
 }
 
+# Install additional tools on Fedora
+install_additional_tools_fedora() {
+    log_info "Installing additional X11 tools on Fedora..."
+    
+    sudo dnf install -y \
+        alacritty \
+        rofi \
+        feh \
+        picom \
+        scrot \
+        NetworkManager-applet \
+        blueman \
+        pavucontrol \
+        dunst \
+        jetbrains-mono-fonts \
+        fira-code-fonts \
+        google-noto-fonts-common \
+        google-noto-emoji-fonts
+    
+    log_success "Additional tools installed"
+}
+
+# Install additional tools on Debian/Ubuntu
+install_additional_tools_debian() {
+    log_info "Installing additional X11 tools on Debian/Ubuntu..."
+    
+    sudo apt install -y \
+        alacritty \
+        rofi \
+        feh \
+        picom \
+        scrot \
+        network-manager-gnome \
+        blueman \
+        pavucontrol \
+        dunst \
+        fonts-jetbrains-mono \
+        fonts-firacode \
+        fonts-noto \
+        fonts-noto-color-emoji
+    
+    log_success "Additional tools installed"
+}
+
+# Install additional tools based on detected distribution
+install_additional_tools() {
+    case "$DISTRO" in
+        arch)
+            install_additional_tools_arch
+            ;;
+        fedora)
+            install_additional_tools_fedora
+            ;;
+        debian)
+            install_additional_tools_debian
+            ;;
+        nixos)
+            log_info "Additional tools are included in NixOS configuration above"
+            ;;
+        *)
+            log_error "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+    esac
+}
+
 # Create desktop entry
 create_desktop_entry() {
     log_info "Creating DWM desktop entry..."
@@ -818,7 +1015,8 @@ create_desktop_entry() {
 Encoding=UTF-8
 Name=DWM
 Comment=Dynamic window manager
-Exec=dwm
+TryExec=/usr/local/bin/dwm
+Exec=/usr/local/bin/dwm
 Icon=dwm
 Type=XSession
 EOF
@@ -851,9 +1049,20 @@ main() {
     echo "DWM is a minimalist tiling window manager that requires compilation from source."
     echo
     
+    detect_system
+    
+    # Handle NixOS differently as it doesn't compile from source
+    if [[ "$DISTRO" == "nixos" ]]; then
+        install_build_deps  # This will show NixOS configuration instructions
+        return
+    fi
+    
     ask_build_options
     
-    install_build_deps
+    if ! install_build_deps; then
+        return  # Exit if build deps installation failed (like in NixOS)
+    fi
+    
     build_dwm
     
     if [[ "$BUILD_DMENU" == true ]]; then

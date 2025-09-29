@@ -70,7 +70,7 @@ detect_distribution() {
             "nixos")
                 DETECTED_DISTRO="nixos"
                 DISTRO_SCRIPT="$DISTROS_DIR/nixos/nixos-install.sh"
-                log_warning "NixOS not yet fully supported"
+                log_warning "NixOS supported via flakes-based installer (experimental)"
                 ;;
             *)
                 log_error "Unsupported distribution: $ID"
@@ -212,7 +212,8 @@ deploy_dotfiles() {
     log_header "DEPLOYING DOTFILES"
     
     if ! command -v stow &> /dev/null; then
-        log_error "GNU Stow is not installed. Install it first with: sudo pacman -S stow"
+        log_error "GNU Stow is not installed. Please install it using your distro's package manager"
+        log_info "Examples: pacman -S stow | apt install stow | dnf install stow"
         exit 1
     fi
     
@@ -391,14 +392,32 @@ modern_installation() {
     log_info "Installer: $DISTRO_SCRIPT"
     echo
     
-    read -p "Continue with modern installer? (Y/n): " choice
-    if [[ "$choice" =~ ^[Nn]$ ]]; then
-        log_info "Falling back to legacy mode..."
-        return 1
+    # Support non-interactive usage with --yes / -y
+    local skip_prompt=0
+    local arg
+    for arg in "$@"; do
+        if [[ "$arg" == "--yes" || "$arg" == "-y" ]]; then
+            skip_prompt=1
+            break
+        fi
+    done
+
+    if [[ $skip_prompt -eq 0 ]]; then
+        read -p "Continue with modern installer? (Y/n): " choice
+        if [[ "$choice" =~ ^[Nn]$ ]]; then
+            log_info "Falling back to legacy mode..."
+            return 1
+        fi
     fi
     
-    # Execute the distribution-specific installer
-    bash "$DISTRO_SCRIPT" "$@"
+    # Execute the distribution-specific installer (filter out --yes/-y)
+    local pass_args=()
+    for arg in "$@"; do
+        if [[ "$arg" != "--yes" && "$arg" != "-y" ]]; then
+            pass_args+=("$arg")
+        fi
+    done
+    bash "$DISTRO_SCRIPT" "${pass_args[@]}"
     exit $?
 }
 
@@ -419,7 +438,7 @@ show_final_instructions() {
     echo "  Super + 1-5    : Switch workspaces"
     echo
     log_info "Configuration files are now managed by GNU Stow."
-    log_info "To update configs: edit files in ~/dotfiles/ and run 'stow -t ~ <package>'"
+    log_info "To update configs: edit files in $SCRIPT_DIR/ and run 'stow -t ~ <package>'"
     echo
     log_warning "If you encounter any issues, check the backup at ~/.config-backup-*"
     echo
@@ -532,21 +551,26 @@ main() {
             --help)
                 echo "Usage: $0 [option]"
                 echo "Options:"
-                echo "  --modern    : Use new multi-WM installer (default)"
-                echo "  --legacy    : Use legacy Hyprland-only installer (Arch only)"
-                echo "  --full      : Full Hyprland installation (legacy)"
-                echo "  --packages  : Install packages only (legacy)"
-                echo "  --dotfiles  : Deploy dotfiles only (legacy)"
-                echo "  --themes    : Setup themes only (legacy)"
-                echo "  --system    : Configure system only (legacy)"
-                echo "  --git       : Setup git only (legacy)"
-                echo "  --sddm      : Setup SDDM display manager only (legacy)"
-                echo "  --zsh       : Setup Zsh shell only (legacy)"
-                echo "  --python-deps : Setup Python build dependencies only (legacy)"
-                echo "  --gaming    : Install gaming setup (legacy)"
-                echo "  --help      : Show this help"
+                echo "  --modern       : Use new multi-WM installer (default)"
+                echo "  --yes, -y      : Skip prompts in modern installer (non-interactive)"
+                echo "  --legacy       : Use legacy Hyprland-only installer (Arch only)"
+                echo "  --full         : Full Hyprland installation (legacy)"
+                echo "  --packages     : Install packages only (legacy)"
+                echo "  --dotfiles     : Deploy dotfiles only (legacy)"
+                echo "  --themes       : Setup themes only (legacy)"
+                echo "  --system       : Configure system only (legacy)"
+                echo "  --git          : Setup git only (legacy)"
+                echo "  --sddm         : Setup SDDM display manager only (legacy)"
+                echo "  --zsh          : Setup Zsh shell only (legacy)"
+                echo "  --python-deps  : Setup Python build dependencies only (legacy)"
+                echo "  --gaming       : Install gaming setup (legacy)"
+                echo "  --help         : Show this help"
                 echo ""
-                echo "For multi-window manager support, use: $DISTRO_SCRIPT"
+                if [[ "$DETECTED_DISTRO" == "nixos" ]]; then
+                    echo "NixOS Flakes installer: $DISTRO_SCRIPT"
+                else
+                    echo "For multi-window manager support, use: $DISTRO_SCRIPT"
+                fi
                 exit 0
                 ;;
             *)

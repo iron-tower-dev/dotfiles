@@ -90,8 +90,8 @@ install_hyprland_fedora() {
     
     # Enable RPM Fusion repositories
     sudo dnf install -y \
-        https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
-        https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || true
+        "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
+        "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm" || true
     
     # Core Hyprland and Wayland packages
     sudo dnf install -y \
@@ -272,7 +272,11 @@ waybar &
 dunst &
 
 # Start polkit authentication agent
-/usr/lib/polkit-kde-authentication-agent-1 &
+if command -v /usr/lib/polkit-kde-authentication-agent-1 >/dev/null 2>&1; then
+    /usr/lib/polkit-kde-authentication-agent-1 &
+elif command -v /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 >/dev/null 2>&1; then
+    /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+fi
 
 # Start network manager applet
 nm-applet --indicator &
