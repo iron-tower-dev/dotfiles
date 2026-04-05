@@ -1,0 +1,5 @@
+require("plugins.statusline")
+-- require("plugins.umbraline")
+require("plugins.catppuccin")
+require("plugins.oil")
+require("plugins.lsp")
