@@ -4,10 +4,10 @@ vim.pack.add({
 })
 
 require("mason").setup()
+require("plugins.lsp.lua_ls")
 
 vim.lsp.enable({
   "gopls",
-  "lua_ls",
   "ts_ls",
 })
 
