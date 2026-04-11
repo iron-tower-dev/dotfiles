@@ -1,5 +1,5 @@
 require("statusline")
--- require("umbraline")
 require("plugins.catppuccin")
 require("plugins.oil")
 require("plugins.lsp")
+require("plugins.tree-sitter-manager")
